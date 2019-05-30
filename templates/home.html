@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta http-equiv="content-type" content="text/html; charset=UTF-8">
+	<title>myVM Login</title>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+<!--===============================================================================================-->
+	<link rel="icon" type="image/png" href="{{ url_for('static', filename='images/favicon.ico') }}">
+<!--===============================================================================================-->
+	<link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='css/bootstrap.css') }}">
+<!--===============================================================================================-->
+	<link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='css/font-awesome.css') }}">
+<!--===============================================================================================-->
+	<link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='css/animate.css') }}">
+<!--===============================================================================================-->
+	<link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='css/hamburgers.css') }}">
+<!--===============================================================================================-->
+	<link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='css/select2.css') }}">
+<!--===============================================================================================-->
+	<link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='css/util.css') }}">
+	<link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='css/main.css') }}">
+<!--===============================================================================================-->
+</head>
+<body>
+	<nav class="navbar navbar-expand-sm bg-dark navbar-dark sticky-top">
+		<a class="navbar-brand font-weight-bold" href="/home">Lista files</a>
+		<a class="navbar-brand font-weight-bold" href="/antivirus">Statistiche Antivirus</a>
+	</nav>
+	<div class="container-login100">
+		<div class="container mt-3">
+			<h1 class="text-center font-weight-bold" style="margin-bottom: 30px">Files osservati al momento</h1>
+			<li class="list-group-item d-flex justify-content-between align-items-center" style="margin-top:10px">
+				<h4 class="font-weight-bold">ID</h4><h4 class="font-weight-bold">NOME FILE</h4>
+				<form action="add" method="POST" enctype="multipart/form-data">
+					<input  onclick="add_file()" type="file" name="file">
+					<input class="btn btn-success btn-md" type="submit" value="Aggiungi">
+				</form>
+			</li>
+			<ul class="list-group">
+				{% for file in files %}
+				<li id="file_{{file[0]}}"class="list-group-item d-flex justify-content-between align-items-center" style="margin-top:10px; cursor: pointer;" onclick="get_file_info($(this).children(':first').text())">
+					<h5>{{file[0]}}</h5>
+					<h5>{{file[1]}}</h5>
+					<button type="button" class="close" aria-label="Close" onclick="remove_file($(this).prev().prev().text())">
+						<span aria-hidden="true">&times;</span>
+					</button>
+				</li>
+				{% endfor %}
+			</ul>
+		</div>
+	</div>
+
+	<form action="upload.asp" method="post" enctype="multipart/form-data">
+		CAMPO TESTO <input type="text" name="testo1">
+		FILE <input type="file" name="file1">
+		<input type="submit" value="Upload">
+	  </form>
+
+
+
+
+<!--===============================================================================================-->
+	<script type="text/javascript" async="" src="../static/js/analytics.js"></script><script src="../static/js/jquery-3.js" type="text/javascript"></script>
+<!--===============================================================================================-->
+	<script src="../static/js/popper.js" type="text/javascript"></script>
+	<script src="../static/js/bootstrap.js" type="text/javascript"></script>
+<!--===============================================================================================-->
+	<script src="../static/js/select2.js" type="text/javascript"></script>
+<!--===============================================================================================-->
+	<script src="../static/js/tilt.js" type="text/javascript"></script>
+	<script type="text/javascript">
+		$('.js-tilt').tilt({
+			scale: 1.1
+		})
+	</script>
+<!-- Global site tag (gtag.js) - Google Analytics -->
+<script async="" src="../static/js/js.js" type="text/javascript"></script>
+<script type="text/javascript">
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'UA-23581568-13');
+</script>
+
+<!--===============================================================================================-->
+	<script src="../static/js/main.js" type="text/javascript"></script>
+	<script src="https://unpkg.com/sweetalert/dist/sweetalert.min.js"></script>
+
+
+<script type="text/javascript">
+function get_file_info(id_)  {
+	window.location.replace("file?id=" + id_);
+}
+
+function add_file()  {
+
+}
+
+function remove_file(id_)  {
+	swal({
+		title: "Sicuro?",
+		icon: "warning",
+		buttons: true,
+		dangerMode: true,
+	}).then((willDelete) => {
+		if (willDelete) {
+			swal("File cancellato dal sistema", {
+				icon: "success",
+			});
+
+			$.ajax({
+				url: "rmv",
+				type: "POST",
+				data: {id: id_ }
+			}).done(function( e ) {
+				$('#file_' + id_).remove();
+			})
+		}
+	});
+	event.stopPropagation();
+}
+</script>
+</body></html>
