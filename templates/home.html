@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 	<meta http-equiv="content-type" content="text/html; charset=UTF-8">
-	<title>myVM Login</title>
+	<title>myVM -> Home</title>
 	<meta charset="UTF-8">
 	<meta name="viewport" content="width=device-width, initial-scale=1">
 <!--===============================================================================================-->
@@ -32,9 +32,9 @@
 			<h1 class="text-center font-weight-bold" style="margin-bottom: 30px">Files osservati al momento</h1>
 			<li class="list-group-item d-flex justify-content-between align-items-center" style="margin-top:10px">
 				<h4 class="font-weight-bold">ID</h4><h4 class="font-weight-bold">NOME FILE</h4>
-				<form action="add" method="POST" enctype="multipart/form-data">
-					<input  onclick="add_file()" type="file" name="file">
-					<input class="btn btn-success btn-md" type="submit" value="Aggiungi">
+				<form id="upload-file" method="POST" enctype="multipart/form-data">
+					<input  type="file" name="file">
+					<input type="button" id="upload-file-btn" class="btn btn-success btn-md" value="Aggiungi">
 				</form>
 			</li>
 			<ul class="list-group">
@@ -50,14 +50,6 @@
 			</ul>
 		</div>
 	</div>
-
-	<form action="upload.asp" method="post" enctype="multipart/form-data">
-		CAMPO TESTO <input type="text" name="testo1">
-		FILE <input type="file" name="file1">
-		<input type="submit" value="Upload">
-	  </form>
-
-
 
 
 <!--===============================================================================================-->
@@ -94,9 +86,62 @@ function get_file_info(id_)  {
 	window.location.replace("file?id=" + id_);
 }
 
-function add_file()  {
+$('#upload-file-btn').click(function() {
+	var form_data = new FormData($('#upload-file')[0]);
 
-}
+	$.ajax({
+		type: 'POST',
+		url: '/add',
+		data: form_data,
+		contentType: false,
+		cache: false,
+		processData: false,
+		success: function(data) {
+			if(data == "success")  {
+				swal({
+					title: "File caricato",
+					text: "Potrebbe volerci un po' prima di vederlo in lista",
+					icon: "success",
+				})
+			}
+			else if(data == "too_many_files")  {
+				swal({
+					title: "File non caricato",
+					text: "Troppi files in attesa di scan, provare più tardi",
+					icon: "error",
+				})
+			}
+			else if(data == "too_big")  {
+				swal({
+					title: "File non caricato",
+					text: "File troppo grande, dimensione max: 100MB",
+					icon: "error",
+				})
+			} 
+			else if(data == "too_many_files_db")  {
+				swal({
+					title: "File non caricato",
+					text: "Troppi files monitorati, cancellarne qualcuno",
+					icon: "error",
+				})
+			}
+			else if(data == "not_supported_format")  {
+				swal({
+					title: "File non caricato",
+					text: "Formato file non supportato",
+					icon: "error",
+				})
+			}
+		},
+		error: function(data) {
+			swal({
+				title: "C'è stato un errore",
+				text: "Il file non è stato caricato, riprova",
+				icon: "error",
+			})
+		},
+	});
+});
 
 function remove_file(id_)  {
 	swal({
@@ -106,16 +151,23 @@ function remove_file(id_)  {
 		dangerMode: true,
 	}).then((willDelete) => {
 		if (willDelete) {
-			swal("File cancellato dal sistema", {
-				icon: "success",
-			});
 
 			$.ajax({
 				url: "rmv",
 				type: "POST",
 				data: {id: id_ }
-			}).done(function( e ) {
-				$('#file_' + id_).remove();
+			}).done(function(data) {
+				if(data == "success")  {
+					$('#file_' + id_).remove();
+					swal("File cancellato dal sistema", {
+						icon: "success",
+					});
+				}
+				else if(data == "error")  {
+					swal("C'è stato qualche errore cancellando il file", {
+						icon: "error",
+					});
+				}
 			})
 		}
 	});

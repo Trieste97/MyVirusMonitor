@@ -3,20 +3,21 @@ import time
 import requests
 import sys
 import mysql.connector
+import os
 from datetime import datetime, timedelta
 from threading import Thread
 
 class VirusMonitor(Thread):
-	def __init__(self, db_connection, queue, where_print):
+	def __init__(self, db_connection, queue):
 		super().__init__()
 		self.db_connection = db_connection
 		self.cursor = db_connection.cursor(buffered=True)
 		self.queue = queue
-		self.console = where_print
 
-		conf_file = open('BackEnd/ServerConfig.json')
+		conf_file = open('../ServerConfig.json')
 		conf_info = json.loads(conf_file.read())
 		self.api_key = conf_info['vm_api']
+		self.post_scan_url = conf_info['post_scan_url']
 		self.post_rescan_url = conf_info['post_rescan_url']
 		self.get_report_url = conf_info['get_report_url']
 		conf_file.close()
@@ -34,16 +35,27 @@ class VirusMonitor(Thread):
 
 	def run(self):
 
-		self.console.print("[VM] VirusMonitor started")
+		print("[VM] VirusMonitor started")
 		was_empty = True
 
 		while True:
 
-			self.console.print("[VM] Querying files to control")
+			print("[VM] Checking if there are files in directory to scan")
+			path, dirs, files = next(os.walk("tmp_files"))
+			for file_ in files:
+				try:
+					self.scan(file_)
+					os.remove("tmp_files/" + file_)
+					print("[VM] File " + file_ + " successfully scanned and deleted")
+				except Exception as e:
+					print("[VM] Some problem happened scanning file\n" + str(e))
+
+
+			print("[VM] Querying files to control")
 			query = ("SELECT id FROM File WHERE next_scan < NOW() ORDER BY next_scan LIMIT 10")
 			self.cursor.execute(query)
 
-			self.console.print("[VM] Got {}/10 files to scan".format(self.cursor.rowcount))
+			print("[VM] Got {}/10 files to scan".format(self.cursor.rowcount))
 			for x in range(self.cursor.rowcount):
 				self.queue.put((0, str(self.cursor.fetchone()[0])))
 
@@ -52,15 +64,13 @@ class VirusMonitor(Thread):
 				was_empty = False
 				tmp = self.queue.get()
 
-				#action = 0 OR 1 OR 2 OR 3
+				#action = 0 OR 1 OR 2
 				#action = 0 => id_ = file id to rescan
 				#action = 1 => id_ = file id to get report and update
-				#action = 2 => id_ = file id to remove
-				#action = 3 => id_ = resource_id|file_name of file to wait report and insert
 				action_ = tmp[0]
 				id_ = tmp[1]
 
-				self.console.print("[VM] Checking file with id = {}, action = {}".format(id_, action_))
+				print("[VM] Checking file with id = {}, action = {}".format(id_, action_))
 
 				try:
 					if action_ == 0:
@@ -69,23 +79,15 @@ class VirusMonitor(Thread):
 					elif action_ == 1:
 						self.update(id_)
 
-					elif action_ == 2:
-						self.remove(id_)
-						continue
-
-					elif action_ == 3:
-						self.insert(id_)
-						continue
-
 				except Exception as e:
-					self.console.print('[VM] Some error happened')
-					self.console.print(str(e))
+					print('[VM] Some error happened')
+					print(str(e))
 
-				self.console.print("[VM] Going to sleep for 15 seconds")
+				print("[VM] Going to sleep for 15 seconds")
 				time.sleep(16)
 
 			if was_empty:
-				self.console.print("[VM] Going to sleep for 5 minutes")
+				print("[VM] Going to sleep for 5 minutes")
 				self.db_connection.commit()
 				time.sleep(300)
 			
@@ -96,27 +98,27 @@ class VirusMonitor(Thread):
 
 
 	def rescan(self, id_):
-		self.console.print("[VM] Re-scanning file")
+		print("[VM] Re-scanning file")
 		query = ("SELECT resource_id FROM File WHERE id = %s")
 		self.cursor.execute(query, (id_,))
 		resource_ = self.cursor.fetchone()[0]
 
-		self.console.print("[VM] Submitting resource to VirusTotal")
+		print("[VM] Submitting resource to VirusTotal")
 		params = {'apikey': self.api_key, 'resource': resource_}
 		response = requests.post(self.post_rescan_url, params=params)
-		self.console.print("[VM] Received response")		
+		print("[VM] Received response")		
 
 		response_json = response.json()
 		if response_json['response_code'] == 1:
-			self.console.print("[VM] Resource submitted successfully")
-			nextscan_ = datetime.now() + timedelta(hours=8)
+			print("[VM] Resource submitted successfully")
+			nextscan_ = datetime.now() + timedelta(hours=12)
 			query = ("UPDATE File SET next_scan = %s WHERE id = %s")
 			self.cursor.execute(query, (nextscan_,id_,))
 			self.db_connection.commit()
-
 			self.queue.put((1,id_))
+			
 		else:
-			self.console.print("[VM] Couldn't submit resource")
+			print("[VM] Couldn't submit resource")
 			nextscan_ = datetime.now() + timedelta(hours=1)
 			query = ("UPDATE File SET next_scan = %s WHERE id = %s")
 			self.cursor.execute(query, (nextscan_,id_,))
@@ -124,19 +126,19 @@ class VirusMonitor(Thread):
 
 
 	def update(self, id_):
-		self.console.print("[VM] Updating file")
+		print("[VM] Updating file")
 		query = ("SELECT resource_id FROM File WHERE id = %s")
 		self.cursor.execute(query, (id_,))
 		resource_ = self.cursor.fetchone()[0]
 
-		self.console.print("[VM] Requesting data from VirusTotal")
+		print("[VM] Requesting data from VirusTotal")
 		params = {'apikey': self.api_key, 'resource': resource_}
 		response = requests.post(self.get_report_url, params=params)
-		self.console.print("[VM] Data received")
+		print("[VM] Data received")
 
 		report_data = response.json()
 		if report_data['response_code'] == 1:
-			self.console.print("[VM] Report is ready")
+			print("[VM] Report is ready")
 			detected_av_query = ("SELECT av_name FROM VirusDetected WHERE file_id = %s")
 			self.cursor.execute(detected_av_query, (id_,))
 			detected_av_list = []
@@ -174,7 +176,7 @@ class VirusMonitor(Thread):
 							self.db_connection.commit()
 
 						except mysql.connector.IntegrityError:
-							self.console.print("[VM] False positive already registered")
+							print("[VM] False positive already registered")
 
 				#3 caso: file individuato da av che non lo aveva individuato
 				elif info_scan['detected']:
@@ -190,38 +192,41 @@ class VirusMonitor(Thread):
 						self.db_connection.commit()
 
 					except mysql.connector.IntegrityError:
-						self.console.print("[VM] AntiVirus-File already registered as processed")
+						print("[VM] AntiVirus-File already registered as processed")
 
 		else:
-			self.console.print("[VM] Report is NOT ready")
+			print("[VM] Report is NOT ready")
 			self.queue.put((1, id_))
 
-	def remove(self, id_):
-		self.console.print("[VM] Deleting file from DB")
-		remove_query = ("DELETE FROM File WHERE id = %s")
-		self.cursor.execute(remove_query, (id_,))
-		self.db_connection.commit()
 
-		self.console.print("[VM] File successfully deleted")
+	def scan(self, filename):
+		print("[VM] Scanning file " + filename)
+		params = {'apikey': self.api_key}
+		files = {'file': (filename, open("tmp_files/" + filename, "rb"))}
+		response = requests.post(self.post_scan_url, files=files, params=params)
+		response_data = response.json()
 
-	#API, for inserting multiple files with scripts
-	def insert(self, resource_and_filename):
-		comma_indx = resource_and_filename.find(',')
-		stang_indx = resource_and_filename.find('|')
+		if response_data['response_code'] == 1:
+			self.insert(response_data['resource'], filename)
+			print("[VM] Scan succesfull")
+		else:
+			print("[VM] Some problem happened\n" + response_data['verbose_msg'])
 
-		resource_id_ = resource_and_filename[comma_indx+1 : stang_indx]
-		file_name_ = resource_and_filename[stang_indx+1 :]
+		print("[VM] Going to sleep for 15 seconds")
+		time.sleep(16)
 
-		self.console.print("[VM] Inserting file")
+
+	def insert(self, resource_id_, file_name_):
+		print("[VM] Inserting file")
 		query = ("INSERT INTO File(name,resource_id,next_scan) VALUES(%s,%s,%s)")
-		nextscan_ = datetime.now() + timedelta(hours=8)
+		nextscan_ = datetime.now() + timedelta(hours=12)
 		try:
 			self.cursor.execute(query, (file_name_,resource_id_,nextscan_,))
 			self.db_connection.commit()
-			self.console.print("[VM] File successfully inserted")
+			print("[VM] File successfully inserted")
 			newfile_id = self.cursor.lastrowid
 			self.queue.put((1, str(newfile_id)))
-			self.console.print("[VM] File successfully queued for update")
+			print("[VM] File successfully queued for update")
 
 		except mysql.connector.IntegrityError:
-			self.console.print("[VM] File already registered")
+			print("[VM] File already registered")
