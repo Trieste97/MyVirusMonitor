@@ -5,21 +5,15 @@
 	<title>myVM -> Home</title>
 	<meta charset="UTF-8">
 	<meta name="viewport" content="width=device-width, initial-scale=1">
-<!--===============================================================================================-->
 	<link rel="icon" type="image/png" href="{{ url_for('static', filename='images/favicon.ico') }}">
-<!--===============================================================================================-->
 	<link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='css/bootstrap.css') }}">
-<!--===============================================================================================-->
 	<link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='css/font-awesome.css') }}">
-<!--===============================================================================================-->
 	<link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='css/animate.css') }}">
-<!--===============================================================================================-->
 	<link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='css/hamburgers.css') }}">
-<!--===============================================================================================-->
 	<link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='css/select2.css') }}">
-<!--===============================================================================================-->
 	<link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='css/util.css') }}">
 	<link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='css/main.css') }}">
+	<link rel="stylesheet" href="https://www.w3schools.com/w3css/4/w3.css">
 <!--===============================================================================================-->
 </head>
 <body>
@@ -41,8 +35,19 @@
 				{% for file in files %}
 				<li id="file_{{file[0]}}"class="list-group-item d-flex justify-content-between align-items-center" style="margin-top:10px; cursor: pointer;" onclick="get_file_info($(this).children(':first').text())">
 					<h5>{{file[0]}}</h5>
-					<h5>{{file[1]}}</h5>
-					<button type="button" class="close" aria-label="Close" onclick="remove_file($(this).prev().prev().text())">
+					<h5 style="width: 60%">{{file[1]}}</h5>
+					
+					{% if file[4] == 0 and file[5] != 0%}
+                    			<div style="width: 20%" class="w3-light-grey w3-round-xlarge">
+    						<div class="w3-container w3-green w3-round-xlarge" style="width:100%"><p>0/{{file[5]}}</p></div>
+  					</div>
+					{% endif %}
+					{% if file[4] != 0 and file[5] != 0 %}
+					<div style="width: 20%" class="w3-light-grey w3-round-xlarge">
+                                                <div class="w3-container w3-red w3-round-xlarge" style="width:{{ (file[4]/file[5]) * 100}}%; min-width: 25%;"><p style="color:white">{{file[4]}}/{{file[5]}}</p></div>
+					</div>
+					{% endif %}
+					<button type="button" class="close" aria-label="Close" onclick="remove_file($(this).prev().prev().prev().text())">
 						<span aria-hidden="true">&times;</span>
 					</button>
 				</li>
@@ -53,32 +58,20 @@
 
 
 <!--===============================================================================================-->
-	<script type="text/javascript" async="" src="../static/js/analytics.js"></script><script src="../static/js/jquery-3.js" type="text/javascript"></script>
-<!--===============================================================================================-->
+	<script type="text/javascript" async="" src="../static/js/analytics.js"></script>
+    <script src="../static/js/jquery-3.js" type="text/javascript"></script>
 	<script src="../static/js/popper.js" type="text/javascript"></script>
 	<script src="../static/js/bootstrap.js" type="text/javascript"></script>
-<!--===============================================================================================-->
 	<script src="../static/js/select2.js" type="text/javascript"></script>
-<!--===============================================================================================-->
 	<script src="../static/js/tilt.js" type="text/javascript"></script>
 	<script type="text/javascript">
 		$('.js-tilt').tilt({
 			scale: 1.1
 		})
 	</script>
-<!-- Global site tag (gtag.js) - Google Analytics -->
-<script async="" src="../static/js/js.js" type="text/javascript"></script>
-<script type="text/javascript">
-  window.dataLayer = window.dataLayer || [];
-  function gtag(){dataLayer.push(arguments);}
-  gtag('js', new Date());
-
-  gtag('config', 'UA-23581568-13');
-</script>
-
-<!--===============================================================================================-->
 	<script src="../static/js/main.js" type="text/javascript"></script>
 	<script src="https://unpkg.com/sweetalert/dist/sweetalert.min.js"></script>
+<!--===============================================================================================-->
 
 
 <script type="text/javascript">

@@ -87,7 +87,20 @@ def home():
 	try:
 		cursor.execute("SELECT * FROM File")
 		rows = cursor.fetchall()
-		return render_template("home.html", files = rows)
+
+		#Taking info about each file: num av that detected it vs num av that processed it
+		data = []
+		for row in rows:
+			id = row[0]
+			cursor.execute("SELECT count(*) FROM VirusDetected WHERE file_id = %s", (id,))
+			num_detected = cursor.fetchone()
+			cursor.execute("SELECT count(*) FROM AvProcessedFile WHERE file_id = %s", (id,))
+			num_processed = cursor.fetchone()
+
+			#file_info is a tuple
+			file_info = row + num_detected + num_processed
+			data.append(file_info)
+		return render_template("home.html", files = data)
 	except:
 		return render_template("error.html")
 

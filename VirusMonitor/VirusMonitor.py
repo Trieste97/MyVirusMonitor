@@ -1,7 +1,6 @@
 import json
 import time
 import requests
-import sys
 import mysql.connector
 import os
 import BlockingQueue
@@ -54,7 +53,11 @@ class VirusMonitor(Thread):
 					os.remove("tmp_files/" + file_)
 					print("[VM] File " + file_ + " successfully scanned and deleted")
 				except Exception as e:
-					print("[VM] Some problem happened scanning file\n" + str(e))
+					log_file = open("error_log", "a")
+					current_time = datetime.now()
+					log_file.append(current_time.strftime("%d/%m/%Y %H:%M:%S") + "\n")
+					log_file.append("[VM] Some problem happened scanning file\n" + str(e) +"\n")
+					log_file.close()
 
 
 			print("[VM] Querying files to control")
@@ -86,8 +89,11 @@ class VirusMonitor(Thread):
 						self.update(id_)
 
 				except Exception as e:
-					print('[VM] Some error happened')
-					print(str(e))
+					log_file = open("error_log", "a")
+					current_time = datetime.now()
+					log_file.append(current_time.strftime("%d/%m/%Y %H:%M:%S") + "\n")
+					log_file.append("[VM] Some error happened rescanning or updating\n" + str(e) + "\n")
+					log_file.close()
 
 				print("[VM] Going to sleep for 15 seconds")
 				time.sleep(16)
