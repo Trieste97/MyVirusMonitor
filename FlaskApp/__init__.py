@@ -2,31 +2,27 @@ from flask import Flask, render_template, request, url_for, redirect, session, f
 from werkzeug import secure_filename
 import mysql.connector, json, os
 
-from BackEnd import VirusMonitor
-from BackEnd import BlockingQueue
-
 #FLASK HANDLERS
 app = Flask(__name__)
 app.secret_key = "3CDDB48BDD8D59EEB44FDFAA99B5"
 
 #WEB LOGIN INFO
-true_user = 'admin_tesi_vm'
-true_pass = 'admin_pass'
+conf_file = open("/var/www/FlaskApp/Config.json")
+conf = json.loads(conf_file.read())
+
+true_user = conf['site_user']
+true_pass = conf['site_psw']
 
 #DATABASE HANDLERS
-conf_file = open('../ServerConfig.json')
-conf_info = json.loads(conf_file.read())
 db_connection = mysql.connector.connect(
-	user=conf_info['db_user'], password=conf_info['db_password'],
-	host=conf_info['db_host'], database=conf_info['db_name'])
-conf_file.close()
+	user=conf['db_user'],
+	password=conf['db_psw'],
+	host=conf['db_host'],
+	database=conf['db_name'])
 
 cursor = db_connection.cursor(buffered=True)
 
-#CODA BLOCCANTE PER TASKS
-tasks_queue = BlockingQueue.BlockingQueue()
-
-
+conf_file.close()
 #FUNZIONI UTILIY
 supported_filetypes = [
 	"exe", "eml", "xls", "img", "virus", "zip", "rar", "ace", "doc", "msi"
@@ -55,11 +51,11 @@ def manage_new_file(file):
 	num_files_in_db = cursor.rowcount
 	if num_files_in_db > 2000:
 		return  "too_many_files_db"
-	
+
 	file.save('tmp_files/' + secure_filename(file.filename))
 	return "success"
 
-	
+
 
 #WEB FUNCTIONS
 @app.route('/')
@@ -80,7 +76,7 @@ def login():
 	if tried_user == true_user and tried_pass == true_pass:
 		session['logged_in'] = True
 		return redirect(url_for('home'))
-	
+
 	return redirect(url_for('index'))
 
 @app.route('/home', methods = ['GET'])
@@ -90,7 +86,7 @@ def home():
 
 	try:
 		cursor.execute("SELECT * FROM File")
-		rows = cursor.fetchall()			
+		rows = cursor.fetchall()
 		return render_template("home.html", files = rows)
 	except:
 		return render_template("error.html")
@@ -113,7 +109,7 @@ def antivirus():
 				perc = (num_files_detected / num_files_processed) * 100
 				perc = float('%.2f'%(perc))
 			percs.append(perc)
-			
+
 		#idx 0: nome antivirus
 		#idx 1: num file rilevati
 		#idx 2: num falsi pos
@@ -135,6 +131,9 @@ def file_info():
 		dates = cursor.fetchall()
 
 		count = 0
+		if len(dates) == 0:
+			return home()
+
 		for date_ in dates:
 			cursor.execute("SELECT av_name FROM VirusDetected WHERE file_id = %s AND detect_date = %s", (id, date_[0]))
 			count += cursor.rowcount
@@ -194,12 +193,5 @@ def logout():
 
 
 #MAIN
-if __name__ == '__main__':
-	#creo e avvio il virus monitor
-	virusmonitor = VirusMonitor.VirusMonitor(db_connection, tasks_queue)
-	virusmonitor.start()
-
-	#avvio il sito web
-	app.run(port=12345)
-
-	#db_connection.close()
+if __name__ == '__main__':#avvio il sito web
+	app.run()

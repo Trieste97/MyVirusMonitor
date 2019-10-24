@@ -4,24 +4,30 @@ import requests
 import sys
 import mysql.connector
 import os
+import BlockingQueue
 from datetime import datetime, timedelta
 from threading import Thread
 
 class VirusMonitor(Thread):
-	def __init__(self, db_connection, queue):
+	def __init__(self, queue):
 		super().__init__()
-		self.db_connection = db_connection
-		self.cursor = db_connection.cursor(buffered=True)
+
+		conf_file = open("VMConfig.json")
+		conf = json.loads(conf_file.read())
+		self.db_connection = mysql.connector.connect(
+        		user=conf['db_user'],
+        		password=conf['db_psw'],
+        		host=conf['db_host'],
+        		database=conf['db_name'])
+		self.cursor = self.db_connection.cursor(buffered=True)
 		self.queue = queue
 
-		conf_file = open('../ServerConfig.json')
-		conf_info = json.loads(conf_file.read())
-		self.api_key = conf_info['vm_api']
-		self.post_scan_url = conf_info['post_scan_url']
-		self.post_rescan_url = conf_info['post_rescan_url']
-		self.get_report_url = conf_info['get_report_url']
+		self.api_key = conf['vm_api']
+		self.post_scan_url = conf['post_scan_url']
+		self.post_rescan_url = conf['post_rescan_url']
+		self.get_report_url = conf['get_report_url']
 		conf_file.close()
-	
+
 
 	def check_av(self, av_name):
 		tmp_query = ("SELECT name FROM AntiVirus WHERE name = %s")
@@ -41,7 +47,7 @@ class VirusMonitor(Thread):
 		while True:
 
 			print("[VM] Checking if there are files in directory to scan")
-			path, dirs, files = next(os.walk("tmp_files"))
+			path, dirs, files = next(os.walk("../FlaskApp/tmp_files"))
 			for file_ in files:
 				try:
 					self.scan(file_)
@@ -230,3 +236,10 @@ class VirusMonitor(Thread):
 
 		except mysql.connector.IntegrityError:
 			print("[VM] File already registered")
+
+
+if __name__ == '__main__':
+	queue = BlockingQueue.BlockingQueue()
+
+	vm = VirusMonitor(queue)
+	vm.start()
