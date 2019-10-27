@@ -1,5 +1,6 @@
 from flask import Flask, render_template, request, url_for, redirect, session, flash
 from werkzeug import secure_filename
+from datetime import datetime
 import mysql.connector, json, os
 
 #FLASK HANDLERS
@@ -25,9 +26,18 @@ cursor = db_connection.cursor(buffered=True)
 conf_file.close()
 #FUNZIONI UTILIY
 supported_filetypes = [
-	"exe", "eml", "xls", "img", "virus", "zip", "rar", "ace", "doc", "msi"
+	"exe", "eml", "xls", "img", "virus", "zip", "rar", "ace", "doc", "msi", ""
 ]
 
+#ERROR LOG FUNCTION
+def write_error_log(e):
+	current_time = datetime.now()
+	error_file = open("/var/www/FlaskApp/FlaskApp/error_log", "a")
+	error_file.write(current_time.strftime("%d/%m/%Y %H:%M:%S") + "\n")
+	error_file.write(str(e) + "\n")
+	error_file.close()
+
+#ADD NEW FILE MANAGEMENT
 def manage_new_file(file):
 	#non tiene conto del caso in cui si carica un file con lo stesso nome
 	#di uno già presente in directory
@@ -38,7 +48,7 @@ def manage_new_file(file):
 	if filetype not in supported_filetypes:
 		return "not_supported_format"
 
-	path, dirs, files = next(os.walk("tmp_files"))
+	path, dirs, files = next(os.walk("/var/www/FlaskApp/FlaskApp/tmp_files"))
 	file_count = len(files)
 	if file_count > 20:
 		return "too_many_files"
@@ -52,7 +62,7 @@ def manage_new_file(file):
 	if num_files_in_db > 2000:
 		return  "too_many_files_db"
 
-	file.save('tmp_files/' + secure_filename(file.filename))
+	file.save("/var/www/FlaskApp/FlaskApp/tmp_files/" + secure_filename(file.filename))
 	return "success"
 
 
@@ -101,7 +111,8 @@ def home():
 			file_info = row + num_detected + num_processed
 			data.append(file_info)
 		return render_template("home.html", files = data)
-	except:
+	except Exception as e:
+		write_error_log(e)
 		return render_template("error.html")
 
 @app.route('/antivirus', methods = ['GET'])
@@ -128,7 +139,8 @@ def antivirus():
 		#idx 2: num falsi pos
 		#idx 3: num file processati
 		return render_template("antivirus.html", av_list = rows, perc_list = percs, length = len(rows))
-	except:
+	except Exception as e:
+		write_error_log(e)
 		return render_template("error.html")
 
 @app.route('/file', methods = ['GET'])
@@ -158,7 +170,8 @@ def file_info():
 
 		#formato di info: (detect_date, num_av_per_date, av_list, num_av_detect_total)
 		return render_template("file_info.html", info = detailed_info, name = file_name, length = len(dates))
-	except:
+	except Exception as e:
+		write_error_log(e)
 		return render_template("error.html")
 
 @app.route('/add', methods = ['POST'])
@@ -169,7 +182,8 @@ def add_file():
 	try:
 		f = request.files['file']
 		return manage_new_file(f)
-	except:
+	except Exception as e:
+		write_error_log(e)
 		return "error"
 
 
@@ -178,7 +192,8 @@ def add_file_api():
 	try:
 		f = request.files['file']
 		return manage_new_file(f)
-	except:
+	except Exception as e:
+		write_error_log(e)
 		return "error"
 
 
@@ -194,7 +209,8 @@ def rmv_file():
 		#cursor.execute("DELETE FROM File WHERE id = " + id)
 		#db_connection.commit()
 		return "success"
-	except:
+	except Exception as e:
+		write_error_log(e)
 		return "error"
 
 @app.route('/logout')

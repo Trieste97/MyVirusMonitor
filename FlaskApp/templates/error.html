@@ -1,16 +1,23 @@
 <!DOCTYPE html>
-<html lang="en">
-<head>  
+<html>
+<head>
     <meta http-equiv="content-type" content="text/html; charset=UTF-8">
     <title>myVM -> Error</title>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
 <!--===============================================================================================-->
-    <link rel="icon" type="image/png" href="{{ url_for('static', filename='images/favicon.ico') }}">
-    <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='css/bootstrap.css') }}">
-<!--===============================================================================================-->
+    <link rel="icon" type="image/png" href="static/images/favicon.ico">
+    <link rel="stylesheet" type="text/css" href="../static/css/error.css">
 </head>
+
 <body>
-    <div class="container" style="background-color: #7dd0f2"><img src="../static/images/InternalError.png" alt="problem"></div>
-</body>
+    <div class="error-500" data-text="Oh no! Our spaghetti code is not working properly. We will be back soon!">
+        <spaguetti>
+            <a href="/">BACK HOME</a>
+            <fork></fork>
+            <meat></meat>
+            <pasta></pasta>
+            <plate></plate>
+        </spaguetti>
+    </div>
 </html>
