@@ -7,96 +7,73 @@
 	<meta name="viewport" content="width=device-width, initial-scale=1">
 <!--===============================================================================================-->
 	<link rel="icon" type="image/png" href="{{ url_for('static', filename='images/favicon.ico') }}">
-<!--===============================================================================================-->
 	<link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='css/bootstrap.css') }}">
-<!--===============================================================================================-->
 	<link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='css/font-awesome.css') }}">
-<!--===============================================================================================-->
 	<link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='css/animate.css') }}">
-<!--===============================================================================================-->
 	<link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='css/hamburgers.css') }}">
-<!--===============================================================================================-->
 	<link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='css/select2.css') }}">
-<!--===============================================================================================-->
 	<link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='css/util.css') }}">
 	<link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='css/main.css') }}">
 <!--===============================================================================================-->
-
+    <script src="../static/js/jquery-3.js" type="text/javascript"></script>
 <script type="text/javascript">
-	window.onload = function () {
-		var chart = new CanvasJS.Chart("chartContainer",
-		{
-			title:{ text: "Statistiche Antivirus" },
-			axisX: {
-				interval: 1
-        	},
-			axisY: {
-				title: "Percentuale files rilevati",
-				maximum: 100
-			},
-			data: [
-			{
-				type: "bar",
-				toolTipContent: "<p class=\"text-center\">{y}%<hr/>{av_info}",
-				dataPoints: [
-					{% for i in range(length) %}
-					{ y: {{perc_list[i]}}, label: "{{av_list[i][0]}}", av_info:
-                    "File rilevati: {{av_list[i][1]}}<br>File processati: {{av_list[i][2]}}<br>Falsi positivi: {{av_list[i][3]}}"},
-					{% endfor %}					
-				]
-			}]
-		});
-
-		chart.render();
-	}
+    $( document ).ready(function() {
+        $.ajax({
+            type: 'GET',
+            url: '/sort-antivirus',
+            data: {by: "detects"},
+            error: function(data) {
+                swal({
+                    title: "C'è stato un errore",
+                    text: data,
+                    icon: "error",
+                })
+            },
+            success: function(data) {
+                length = data['length'];
+                if(length > 15)  {
+                    new_len = length * 70;
+                    $("#chartContainer").attr("style", "width: 90%; height: " + new_len.toString() + "px;");
+                }
+                create_chart("Percentuale files rilevati", data);
+            },
+        });
+    });
 </script>
 <script type="text/javascript" src="https://canvasjs.com/assets/script/canvasjs.min.js"></script>
 </head>
-<body>
+<body style="background-color: white">
 	<nav class="navbar navbar-expand-sm bg-dark navbar-dark sticky-top">
 		<a class="navbar-brand font-weight-bold" href="/home">Lista files</a>
 		<a class="navbar-brand font-weight-bold" href="/antivirus">Statistiche Antivirus</a>
+        <div class="dropdown navbar-brand">
+            <button type="button" class="btn btn-primary dropdown-toggle" data-toggle="dropdown">
+                Ordina per ...
+            </button>
+            <div class="dropdown-menu">
+                <a id="sort-by-detects" class="dropdown-item" href="#">Files rilevati</a>
+                <a id="sort-by-processed" class="dropdown-item" href="#">Files processati</a>
+                <a id="sort-by-false" class="dropdown-item" href="#">Falsi positivi</a>
+                <div class="dropdown-divider"></div>
+                <a id="sort-by-time" class="dropdown-item" href="#">Tempo di rilevazione</a>
+            </div>
+        </div>
 	</nav>
-	<div class="container-login100">
+	<div class="container-avlist">
+
 		<div id="chartContainer" style="width: 90%;"></div>
 	</div>
-
-
-
-
+</body>
 <!--===============================================================================================-->
-	<script type="text/javascript" async="" src="../static/js/analytics.js"></script><script src="../static/js/jquery-3.js" type="text/javascript"></script>
 <!--===============================================================================================-->
 	<script src="../static/js/popper.js" type="text/javascript"></script>
 	<script src="../static/js/bootstrap.js" type="text/javascript"></script>
-<!--===============================================================================================-->
 	<script src="../static/js/select2.js" type="text/javascript"></script>
-<!--===============================================================================================-->
 	<script src="../static/js/tilt.js" type="text/javascript"></script>
-	<script type="text/javascript">
-		$('.js-tilt').tilt({
-			scale: 1.1
-		})
-	</script>
-<!-- Global site tag (gtag.js) - Google Analytics -->
-<script async="" src="../static/js/js.js" type="text/javascript"></script>
-<script type="text/javascript">
-  window.dataLayer = window.dataLayer || [];
-  function gtag(){dataLayer.push(arguments);}
-  gtag('js', new Date());
-
-  gtag('config', 'UA-23581568-13');
-</script>
-
-<!--===============================================================================================-->
 	<script src="../static/js/main.js" type="text/javascript"></script>
+    <script src="../static/js/antivirus.js" type="text/javascript"></script>
 	<script src="https://unpkg.com/sweetalert/dist/sweetalert.min.js"></script>
-	
-<script type="text/javascript">
-if({{length}} > 15)  {
-	new_len = {{length}} * 70;
-	$("#chartContainer").attr("style", "width: 90%; height: " + new_len.toString() + "px;");
-}
 
-$(".canvasjs-chart-credit").remove();
+<script type="text/javascript">
+    $(".canvasjs-chart-credit").remove();
 </script>

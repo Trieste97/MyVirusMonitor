@@ -129,7 +129,7 @@ iframe {
   margin: 0 auto;
 }
 
-.container-login100 {
+.container-filelist {
   width: 100%;  
   min-height: 100vh;
   display: -webkit-box;
@@ -146,6 +146,20 @@ iframe {
   background: -o-linear-gradient(-135deg, #c850c0, #4158d0);
   background: -moz-linear-gradient(-135deg, #c850c0, #4158d0);
   background: linear-gradient(-135deg, #c850c0, #4158d0);
+}
+
+.container-avlist  {
+  width: 100%;
+  min-height: 100vh;
+  display: -webkit-box;
+  display: -webkit-flex;
+  display: -moz-box;
+  display: -ms-flexbox;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  /*align-items: center;*/
+  padding: 15px;
 }
 
 .wrap-login100 {

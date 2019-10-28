@@ -58,7 +58,68 @@ def manage_new_file(file):
 	file.save("/var/www/FlaskApp/FlaskApp/tmp_files/" + secure_filename(file.filename))
 	return "success"
 
+#ANTIVIRUS STATS RETRIEVE
+def av_data(by):
+	query = "SELECT * FROM AntiVirus"
+	if by == "detects":
+		query = "SELECT * FROM AntiVirus av ORDER BY (SELECT num_files_detected FROM AV_num_files_detected WHERE av.name = av_name) / (SELECT num_files_processed FROM AV_num_files_processed WHERE av.name = av_name)";
+	elif by == "processed":
+		query = "SELECT * FROM AntiVirus av ORDER BY (SELECT num_files_processed FROM AV_num_files_processed WHERE av.name = av_name) / (SELECT count(*) FROM File)";
+	elif by == "false":
+		query = "SELECT * FROM AntiVirus av ORDER BY (SELECT num_false_positives FROM AV_num_false_positives WHERE av.name = av_name) / (SELECT num_files_processed FROM AV_num_files_processed WHERE av.name = av_name)";
+	elif by == "time":
+		pass
 
+	data = {}
+	cursor.execute("SELECT count(*) FROM File;")
+	num_files = cursor.fetchone()[0]
+	data['files'] = num_files
+	cursor.execute(query)
+	rows = cursor.fetchall()
+	av_list = []
+	percs = []
+	for row in rows:
+		av_name = row[0]
+		cursor.execute("SELECT num_files_detected FROM AV_num_files_detected WHERE av_name = %s", (av_name,))
+		num_files_detected_t = cursor.fetchone()
+		cursor.execute("SELECT num_files_processed FROM AV_num_files_processed WHERE av_name = %s", (av_name,))
+		num_files_processed_t = cursor.fetchone()
+		cursor.execute("SELECT num_false_positives FROM AV_num_false_positives WHERE av_name = %s", (av_name,))
+		num_false_positives_t = cursor.fetchone()
+
+		num_files_detected = 0
+		if num_files_detected_t is not None:
+			num_files_detected = num_files_detected_t[0]
+
+		num_files_processed = 0
+		if num_files_processed_t is not None:
+			num_files_processed = num_files_processed_t[0]
+
+		num_false_positives = 0
+		if num_false_positives_t is not None:
+			num_false_positives = num_false_positives_t[0]
+
+		perc = 0
+		if by == "detects":
+			if num_files_processed > 0:
+				perc = (num_files_detected / num_files_processed) * 100
+				perc = float('%.2f' % (perc))
+		elif by == "processed":
+			if num_files > 0:
+				perc = (num_files_processed / num_files) * 100
+				perc = float('%.2f' % (perc))
+		elif by == "false":
+			if num_files_processed > 0:
+				perc = (num_false_positives / num_files_processed) * 100
+				perc = float('%.2f' % (perc))
+
+		percs.append(perc)
+		av_list.append((av_name, num_files_detected, num_files_processed, num_false_positives))
+
+	data['length'] = len(av_list)
+	data['percs'] = percs
+	data['av_data'] = av_list
+	return data
 
 #WEB FUNCTIONS
 @app.route('/')
@@ -114,46 +175,17 @@ def antivirus():
 		return index()
 
 	try:
-		cursor.execute("SELECT * FROM AntiVirus;")
-		rows = cursor.fetchall()
-
-		av_list_ = []
-		percs = []
-		for row in rows:
-			av_name = row[0]
-			cursor.execute("SELECT num_files_detected FROM AV_num_files_detected WHERE av_name = %s", (av_name,))
-			num_files_detected_t = cursor.fetchone()
-			cursor.execute("SELECT num_files_processed FROM AV_num_files_processed WHERE av_name = %s", (av_name,))
-			num_files_processed_t = cursor.fetchone()
-			cursor.execute("SELECT num_false_positives FROM AV_num_false_positives WHERE av_name = %s", (av_name,))
-			num_false_positives_t = cursor.fetchone()
-
-			num_files_detected = 0
-			if num_files_detected_t is not None:
-				num_files_detected = num_files_detected_t[0]
-
-			num_files_processed = 0
-			if num_files_processed_t is not None:
-				num_files_processed = num_files_processed_t[0]
-
-			num_false_positives = 0
-			if num_false_positives_t is not None:
-				num_false_positives = num_false_positives_t[0]
-
-			perc = 0
-			if num_files_processed > 0:
-				perc = (num_files_detected / num_files_processed) * 100
-				perc = float('%.2f'%(perc))
-			percs.append(perc)
-			av_list_.append((av_name,num_files_detected,num_files_processed,num_false_positives))
-		#idx 0: nome antivirus
-		#idx 1: num file rilevati
-		#idx 2: num falsi pos
-		#idx 3: num file processati
-		return render_template("antivirus.html", av_list = av_list_, perc_list = percs, length = len(rows))
+		data_ = av_data("detects")
+		return render_template("antivirus.html", data=data_)
 	except Exception as e:
 		#TODO error_log
 		return render_template("error.html")
+
+@app.route('/sort-antivirus', methods= ['GET'])
+def sort_av():
+	by = request.args['by']
+	data = av_data(by)
+	return data
 
 @app.route('/file', methods = ['GET'])
 def file_info():
