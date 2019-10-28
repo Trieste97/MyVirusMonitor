@@ -121,6 +121,7 @@ def av_data(by):
 	data['av_data'] = av_list
 	return data
 
+
 #WEB FUNCTIONS
 @app.route('/')
 def index():
@@ -174,12 +175,7 @@ def antivirus():
 	if not session.get('logged_in'):
 		return index()
 
-	try:
-		data_ = av_data("detects")
-		return render_template("antivirus.html", data=data_)
-	except Exception as e:
-		#TODO error_log
-		return render_template("error.html")
+	return render_template("antivirus.html")
 
 @app.route('/sort-antivirus', methods= ['GET'])
 def sort_av():
@@ -188,35 +184,42 @@ def sort_av():
 	return data
 
 @app.route('/file', methods = ['GET'])
-def file_info():
+def file():
 	if not session.get('logged_in'):
 		return index()
 
-	try:
-		id = request.args['id']
-		detailed_info = []
+	return render_template("file.html")
 
-		cursor.execute("SELECT distinct(detect_date) FROM VirusDetected WHERE file_id = " + id + " ORDER BY detect_date")
-		dates = cursor.fetchall()
+@app.route('/file-info', methods = ['GET'])
+def file_info():
+	id = request.args['id']
+	data = {}
+	detailed_info = []
 
-		count = 0
-		if len(dates) == 0:
-			return home()
+	# Prelevo le date in cui il file è stato detectato
+	cursor.execute("SELECT distinct(detect_date) FROM VirusDetected WHERE file_id = " + id + " ORDER BY detect_date")
+	dates = cursor.fetchall()
 
-		for date_ in dates:
-			cursor.execute("SELECT av_name FROM VirusDetected WHERE file_id = %s AND detect_date = %s", (id, date_[0]))
-			count += cursor.rowcount
+	count = 0
+	if len(dates) == 0:
+		return home()
 
-			detailed_info.append((date_[0], cursor.rowcount, cursor.fetchall(), count))
+	for date_ in dates:
+		cursor.execute("SELECT av_name FROM VirusDetected WHERE file_id = %s AND detect_date = %s", (id, date_[0]))
+		count += cursor.rowcount
 
-		cursor.execute("SELECT name FROM File WHERE id = " + id)
-		file_name = cursor.fetchone()
+		detailed_info.append((date_[0], cursor.rowcount, cursor.fetchall(), count))
+	data['file_info'] = detailed_info
 
-		#formato di info: (detect_date, num_av_per_date, av_list, num_av_detect_total)
-		return render_template("file_info.html", info = detailed_info, name = file_name, length = len(dates))
-	except Exception as e:
-		#TODO error_log
-		return render_template("error.html")
+	# Prelevo il nome del file
+	cursor.execute("SELECT name FROM File WHERE id = " + id)
+	file_name_t = cursor.fetchone()
+	if file_name_t is None:
+		return home()
+
+	data['name'] = file_name_t[0]
+	data['length'] = len(dates)
+	return data
 
 @app.route('/add', methods = ['POST'])
 def add_file():
@@ -230,7 +233,6 @@ def add_file():
 		#TODO error_log
 		return "error"
 
-
 @app.route('/add-api', methods = ['POST'])
 def add_file_api():
 	try:
@@ -239,8 +241,6 @@ def add_file_api():
 	except Exception as e:
 		#TODO error_log
 		return "error"
-
-
 
 @app.route('/rmv', methods = ['POST'])
 def rmv_file():
@@ -264,7 +264,6 @@ def logout():
 
 	return index()
 
-
 #MAIN
-if __name__ == '__main__':#avvio il sito web
+if __name__ == '__main__':
 	app.run()

@@ -6,14 +6,14 @@
 	<meta charset="UTF-8">
 	<meta name="viewport" content="width=device-width, initial-scale=1">
 <!--===============================================================================================-->
-	<link rel="icon" type="image/png" href="{{ url_for('static', filename='images/favicon.ico') }}">
-	<link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='css/bootstrap.css') }}">
-	<link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='css/font-awesome.css') }}">
-	<link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='css/animate.css') }}">
-	<link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='css/hamburgers.css') }}">
-	<link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='css/select2.css') }}">
-	<link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='css/util.css') }}">
-	<link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='css/main.css') }}">
+	<link rel="icon" type="image/png" href="../static/images/favicon.ico">
+	<link rel="stylesheet" type="text/css" href="../static/css/bootstrap.css">
+	<link rel="stylesheet" type="text/css" href="../static/css/font-awesome.css">
+	<link rel="stylesheet" type="text/css" href="../static/css/animate.css">
+	<link rel="stylesheet" type="text/css" href="../static/css/hamburgers.css">
+	<link rel="stylesheet" type="text/css" href="../static/css/select2.css">
+	<link rel="stylesheet" type="text/css" href="../static/css/util.css">
+	<link rel="stylesheet" type="text/css" href="../static/css/main.css">
 <!--===============================================================================================-->
     <script src="../static/js/jquery-3.js" type="text/javascript"></script>
 <script type="text/javascript">
@@ -51,16 +51,15 @@
                 Ordina per ...
             </button>
             <div class="dropdown-menu">
-                <a id="sort-by-detects" class="dropdown-item" href="#">Files rilevati</a>
-                <a id="sort-by-processed" class="dropdown-item" href="#">Files processati</a>
-                <a id="sort-by-false" class="dropdown-item" href="#">Falsi positivi</a>
+                <a id="sort-by-detects" class="dropdown-item">Files rilevati</a>
+                <a id="sort-by-processed" class="dropdown-item">Files processati</a>
+                <a id="sort-by-false" class="dropdown-item" >Falsi positivi</a>
                 <div class="dropdown-divider"></div>
-                <a id="sort-by-time" class="dropdown-item" href="#">Tempo di rilevazione</a>
+                <a id="sort-by-time" class="dropdown-item">Tempo di rilevazione</a>
             </div>
         </div>
 	</nav>
 	<div class="container-avlist">
-
 		<div id="chartContainer" style="width: 90%;"></div>
 	</div>
 </body>

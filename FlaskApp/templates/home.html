@@ -5,16 +5,25 @@
 	<title>myVM -> Home</title>
 	<meta charset="UTF-8">
 	<meta name="viewport" content="width=device-width, initial-scale=1">
-	<link rel="icon" type="image/png" href="{{ url_for('static', filename='images/favicon.ico') }}">
-	<link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='css/bootstrap.css') }}">
-	<link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='css/font-awesome.css') }}">
-	<link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='css/animate.css') }}">
-	<link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='css/hamburgers.css') }}">
-	<link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='css/select2.css') }}">
-	<link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='css/util.css') }}">
-	<link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='css/main.css') }}">
+	<link rel="icon" type="image/png" href="../static/images/favicon.ico">
+	<link rel="stylesheet" type="text/css" href="../static/css/bootstrap.css">
+	<link rel="stylesheet" type="text/css" href="../static/css/font-awesome.css">
+	<link rel="stylesheet" type="text/css" href="../static/css/animate.css">
+	<link rel="stylesheet" type="text/css" href="../static/css/hamburgers.css">
+	<link rel="stylesheet" type="text/css" href="../static/css/select2.css">
+	<link rel="stylesheet" type="text/css" href="../static/css/util.css">
+	<link rel="stylesheet" type="text/css" href="../static/css/main.css">
 	<link rel="stylesheet" href="https://www.w3schools.com/w3css/4/w3.css">
 <!--===============================================================================================-->
+    <script type="text/javascript" async="" src="../static/js/analytics.js"></script>
+    <script src="../static/js/jquery-3.js" type="text/javascript"></script>
+	<script src="../static/js/popper.js" type="text/javascript"></script>
+	<script src="../static/js/bootstrap.js" type="text/javascript"></script>
+	<script src="../static/js/select2.js" type="text/javascript"></script>
+	<script src="../static/js/tilt.js" type="text/javascript"></script>
+	<script src="../static/js/main.js" type="text/javascript"></script>
+	<script src="https://unpkg.com/sweetalert/dist/sweetalert.min.js"></script>
+    <script src="../static/js/home.js" type="text/javascript"></script>
 </head>
 <body>
 	<nav class="navbar navbar-expand-sm bg-dark navbar-dark sticky-top">
@@ -55,116 +64,4 @@
 			</ul>
 		</div>
 	</div>
-
-
-<!--===============================================================================================-->
-	<script type="text/javascript" async="" src="../static/js/analytics.js"></script>
-    <script src="../static/js/jquery-3.js" type="text/javascript"></script>
-	<script src="../static/js/popper.js" type="text/javascript"></script>
-	<script src="../static/js/bootstrap.js" type="text/javascript"></script>
-	<script src="../static/js/select2.js" type="text/javascript"></script>
-	<script src="../static/js/tilt.js" type="text/javascript"></script>
-	<script type="text/javascript">
-		$('.js-tilt').tilt({
-			scale: 1.1
-		})
-	</script>
-	<script src="../static/js/main.js" type="text/javascript"></script>
-	<script src="https://unpkg.com/sweetalert/dist/sweetalert.min.js"></script>
-<!--===============================================================================================-->
-
-
-<script type="text/javascript">
-function get_file_info(id_)  {
-	window.location.replace("file?id=" + id_);
-}
-
-$('#upload-file-btn').click(function() {
-	var form_data = new FormData($('#upload-file')[0]);
-
-	$.ajax({
-		type: 'POST',
-		url: '/add',
-		data: form_data,
-		contentType: false,
-		cache: false,
-		processData: false,
-		success: function(data) {
-			if(data == "success")  {
-				swal({
-					title: "File caricato",
-					text: "Potrebbe volerci un po' prima di vederlo in lista",
-					icon: "success",
-				})
-			}
-			else if(data == "too_many_files")  {
-				swal({
-					title: "File non caricato",
-					text: "Troppi files in attesa di scan, provare più tardi",
-					icon: "error",
-				})
-			}
-			else if(data == "too_big")  {
-				swal({
-					title: "File non caricato",
-					text: "File troppo grande, dimensione max: 100MB",
-					icon: "error",
-				})
-			} 
-			else if(data == "too_many_files_db")  {
-				swal({
-					title: "File non caricato",
-					text: "Troppi files monitorati, cancellarne qualcuno",
-					icon: "error",
-				})
-			}
-			else if(data == "not_supported_format")  {
-				swal({
-					title: "File non caricato",
-					text: "Formato file non supportato",
-					icon: "error",
-				})
-			}
-		},
-		error: function(data) {
-			swal({
-				title: "C'è stato un errore",
-				text: "Il file non è stato caricato, riprova",
-				icon: "error",
-			})
-		},
-	});
-});
-
-function remove_file(id_)  {
-	swal({
-		title: "Sicuro?",
-		icon: "warning",
-		buttons: true,
-		dangerMode: true,
-	}).then((willDelete) => {
-		if (willDelete) {
-
-			$.ajax({
-				url: "rmv",
-				type: "POST",
-				data: {id: id_ }
-			}).done(function(data) {
-				if(data == "success")  {
-					$('#file_' + id_).remove();
-					swal("File cancellato dal sistema", {
-						icon: "success",
-					});
-				}
-				else if(data == "error")  {
-					swal("C'è stato qualche errore cancellando il file", {
-						icon: "error",
-					});
-				}
-			})
-		}
-	});
-	event.stopPropagation();
-}
-</script>
 </body></html>
