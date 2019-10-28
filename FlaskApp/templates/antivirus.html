@@ -41,7 +41,7 @@
 				dataPoints: [
 					{% for i in range(length) %}
 					{ y: {{perc_list[i]}}, label: "{{av_list[i][0]}}", av_info:
-                    "File rilevati: {{av_list[i][1]}}<br>File processati: {{av_list[i][3]}}<br>Falsi positivi: {{av_list[i][2]}}"},
+                    "File rilevati: {{av_list[i][1]}}<br>File processati: {{av_list[i][2]}}<br>Falsi positivi: {{av_list[i][3]}}"},
 					{% endfor %}					
 				]
 			}]

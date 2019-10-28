@@ -29,13 +29,6 @@ supported_filetypes = [
 	"exe", "eml", "xls", "img", "virus", "zip", "rar", "ace", "doc", "msi", ""
 ]
 
-#ERROR LOG FUNCTION
-def write_error_log(e):
-	current_time = datetime.now()
-	error_file = open("/var/www/FlaskApp/FlaskApp/error_log", "a")
-	error_file.write(current_time.strftime("%d/%m/%Y %H:%M:%S") + "\n")
-	error_file.write(str(e) + "\n")
-	error_file.close()
 
 #ADD NEW FILE MANAGEMENT
 def manage_new_file(file):
@@ -95,7 +88,7 @@ def home():
 		return index()
 
 	try:
-		cursor.execute("SELECT * FROM File")
+		cursor.execute("SELECT * FROM File as F ORDER BY (SELECT count(*) FROM VirusDetected WHERE file_id = F.id) DESC;")
 		rows = cursor.fetchall()
 
 		#Taking info about each file: num av that detected it vs num av that processed it
@@ -112,7 +105,7 @@ def home():
 			data.append(file_info)
 		return render_template("home.html", files = data)
 	except Exception as e:
-		write_error_log(e)
+		#TODO error_log
 		return render_template("error.html")
 
 @app.route('/antivirus', methods = ['GET'])
@@ -121,26 +114,45 @@ def antivirus():
 		return index()
 
 	try:
-		cursor.execute("SELECT * FROM AntiVirus WHERE num_files_processed > 0 ORDER BY num_files_detected / num_files_processed")
+		cursor.execute("SELECT * FROM AntiVirus;")
 		rows = cursor.fetchall()
 
+		av_list_ = []
 		percs = []
 		for row in rows:
-			num_files_detected = row[1]
-			num_files_processed = row[3]
+			av_name = row[0]
+			cursor.execute("SELECT num_files_detected FROM AV_num_files_detected WHERE av_name = %s", (av_name,))
+			num_files_detected_t = cursor.fetchone()
+			cursor.execute("SELECT num_files_processed FROM AV_num_files_processed WHERE av_name = %s", (av_name,))
+			num_files_processed_t = cursor.fetchone()
+			cursor.execute("SELECT num_false_positives FROM AV_num_false_positives WHERE av_name = %s", (av_name,))
+			num_false_positives_t = cursor.fetchone()
+
+			num_files_detected = 0
+			if num_files_detected_t is not None:
+				num_files_detected = num_files_detected_t[0]
+
+			num_files_processed = 0
+			if num_files_processed_t is not None:
+				num_files_processed = num_files_processed_t[0]
+
+			num_false_positives = 0
+			if num_false_positives_t is not None:
+				num_false_positives = num_false_positives_t[0]
+
 			perc = 0
 			if num_files_processed > 0:
 				perc = (num_files_detected / num_files_processed) * 100
 				perc = float('%.2f'%(perc))
 			percs.append(perc)
-
+			av_list_.append((av_name,num_files_detected,num_files_processed,num_false_positives))
 		#idx 0: nome antivirus
 		#idx 1: num file rilevati
 		#idx 2: num falsi pos
 		#idx 3: num file processati
-		return render_template("antivirus.html", av_list = rows, perc_list = percs, length = len(rows))
+		return render_template("antivirus.html", av_list = av_list_, perc_list = percs, length = len(rows))
 	except Exception as e:
-		write_error_log(e)
+		#TODO error_log
 		return render_template("error.html")
 
 @app.route('/file', methods = ['GET'])
@@ -171,7 +183,7 @@ def file_info():
 		#formato di info: (detect_date, num_av_per_date, av_list, num_av_detect_total)
 		return render_template("file_info.html", info = detailed_info, name = file_name, length = len(dates))
 	except Exception as e:
-		write_error_log(e)
+		#TODO error_log
 		return render_template("error.html")
 
 @app.route('/add', methods = ['POST'])
@@ -183,7 +195,7 @@ def add_file():
 		f = request.files['file']
 		return manage_new_file(f)
 	except Exception as e:
-		write_error_log(e)
+		#TODO error_log
 		return "error"
 
 
@@ -193,7 +205,7 @@ def add_file_api():
 		f = request.files['file']
 		return manage_new_file(f)
 	except Exception as e:
-		write_error_log(e)
+		#TODO error_log
 		return "error"
 
 
@@ -210,7 +222,7 @@ def rmv_file():
 		#db_connection.commit()
 		return "success"
 	except Exception as e:
-		write_error_log(e)
+		#TODO error_log
 		return "error"
 
 @app.route('/logout')
