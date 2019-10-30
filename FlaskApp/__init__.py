@@ -1,5 +1,6 @@
 from flask import Flask, render_template, request, url_for, redirect, session, flash
 from werkzeug import secure_filename
+from operator import itemgetter
 from datetime import datetime
 import mysql.connector, json, os
 
@@ -59,6 +60,62 @@ def manage_new_file(file):
 	return "success"
 
 #ANTIVIRUS STATS RETRIEVE
+def av_sort_time():
+	cursor.execute("SELECT id From File")
+	file_id_rows = cursor.fetchall()
+	file_id_list = []
+	for row in file_id_rows:
+		file_id_list.append(row[0])
+
+	# AV LIST AND THEIR DAYS PASSED + NUMBER OF FILES
+	cursor.execute("SELECT name FROM AntiVirus")
+	av_name_rows = cursor.fetchall()
+	av_data = {}
+	for row in av_name_rows:
+		av_data[row[0]] = [0, 0, 0]
+
+	#the indexes are the following:
+	#0: number of days of late (for all files)
+	#1: number of files processed
+	#2: idx_0 / idx_1 : the mean value of time passed for all files
+
+	# CALCULATING TIME PASSED SINCE FIRST DETECT FOR EACH FILE_ID
+	for file_id in file_id_list:
+		cursor.execute("SELECT detect_date FROM VirusDetected WHERE file_id = %s ORDER BY detect_date LIMIT 1",
+					   (file_id,))
+		# first_detect_date_t is a tuple, if there is at least one detect
+		first_detect_date_t = cursor.fetchone()
+		first_detect_date = None
+
+		if first_detect_date_t is None:
+			continue
+
+		first_detect_date = first_detect_date_t[0]
+		cursor.execute("SELECT av_name,detect_date FROM VirusDetected WHERE file_id = %s AND NOT detect_date = %s "
+					   "ORDER BY detect_date", (file_id, first_detect_date,))
+		data_rows = cursor.fetchall()
+		for row in data_rows:
+			av_name, detect_date = row
+			num_current_days = av_data[av_name][0]
+			num_current_files = av_data[av_name][1]
+			new_days = num_current_days + (detect_date - first_detect_date).days
+			new_files = num_current_files + 1
+			av_data[av_name] = [
+				new_days,
+				new_files,
+				new_days/new_files
+			]
+
+	av_to_delete = []
+	for key in av_data.keys():
+		if av_data[key][1] == 0:
+			av_to_delete.append(key)
+
+	for av_nm in av_to_delete:
+		av_data.pop(av_nm)
+
+	return av_data
+
 def av_data(by):
 	query = "SELECT * FROM AntiVirus"
 	if by == "detects":
@@ -68,7 +125,7 @@ def av_data(by):
 	elif by == "false":
 		query = "SELECT * FROM AntiVirus av ORDER BY (SELECT num_false_positives FROM AV_num_false_positives WHERE av.name = av_name) / (SELECT num_files_processed FROM AV_num_files_processed WHERE av.name = av_name)";
 	elif by == "time":
-		pass
+		return av_sort_time()
 
 	data = {}
 	cursor.execute("SELECT count(*) FROM File;")
@@ -120,7 +177,6 @@ def av_data(by):
 	data['percs'] = percs
 	data['av_data'] = av_list
 	return data
-
 
 #WEB FUNCTIONS
 @app.route('/')
@@ -180,8 +236,7 @@ def antivirus():
 @app.route('/sort-antivirus', methods= ['GET'])
 def sort_av():
 	by = request.args['by']
-	data = av_data(by)
-	return data
+	return av_data(by)
 
 @app.route('/file', methods = ['GET'])
 def file():

@@ -33,7 +33,7 @@
                 length = data['length'];
                 if(length > 15)  {
                     new_len = length * 70;
-                    $("#chartContainer").attr("style", "width: 90%; height: " + new_len.toString() + "px;");
+                    $("#chartContainer").attr("style", "width: 95%; height: " + new_len.toString() + "px;");
                 }
                 create_chart("Percentuale files rilevati", data);
             },
@@ -51,11 +51,11 @@
                 Ordina per ...
             </button>
             <div class="dropdown-menu">
-                <a id="sort-by-detects" class="dropdown-item">Files rilevati</a>
-                <a id="sort-by-processed" class="dropdown-item">Files processati</a>
-                <a id="sort-by-false" class="dropdown-item" >Falsi positivi</a>
+                <a id="sort-by-detects" class="dropdown-item" style="cursor: pointer">Files rilevati</a>
+                <a id="sort-by-processed" class="dropdown-item" style="cursor: pointer">Files processati</a>
+                <a id="sort-by-false" class="dropdown-item"  style="cursor: pointer">Falsi positivi</a>
                 <div class="dropdown-divider"></div>
-                <a id="sort-by-time" class="dropdown-item">Tempo di rilevazione</a>
+                <a id="sort-by-time" class="dropdown-item" style="cursor: pointer">Tempo di rilevazione</a>
             </div>
         </div>
 	</nav>
