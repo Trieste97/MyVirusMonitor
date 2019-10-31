@@ -30,15 +30,21 @@ supported_filetypes = [
 	"exe", "eml", "xls", "img", "virus", "zip", "rar", "ace", "doc", "msi", ""
 ]
 
+#ERROR LOG FUNCTION
+def write_error_log(error):
+	current_time = datetime.now()
+	error_file = open("/var/www/FlaskApp/FlaskApp/error_log", "a")
+	error_file.write(current_time.strftime("%d/%m/%Y %H:%M:%S") + "\n")
+	error_file.write(error + "\n\n")
+	error_file.close()
 
 #ADD NEW FILE MANAGEMENT
 def manage_new_file(file):
-	#non tiene conto del caso in cui si carica un file con lo stesso nome
-	#di uno già presente in directory
+	if file.filename == '':
+		return "nofile"
 
-	name = file.filename
-	filetype_idx = name.rfind('.') + 1
-	filetype = name[filetype_idx :]
+	filetype_idx = file.filename.rfind('.') + 1
+	filetype = file.filename[filetype_idx :]
 	if filetype not in supported_filetypes:
 		return "not_supported_format"
 
@@ -47,16 +53,23 @@ def manage_new_file(file):
 	if file_count > 20:
 		return "too_many_files"
 
-	file_size = os.path.getsize('tmp_files/' + file.filename)
-	if file_size > 100000000:
-		return "too_big"
+	#TODO: gestire file size, max 100MB
+	#if file_size > 100000000:
+	#	return "too_big"
 
 	cursor.execute("SELECT * FROM File")
 	num_files_in_db = cursor.rowcount
 	if num_files_in_db > 2000:
 		return  "too_many_files_db"
 
-	file.save("/var/www/FlaskApp/FlaskApp/tmp_files/" + secure_filename(file.filename))
+	fname = file.filename
+	count = 0
+	while fname in files:
+		fname = str(count) + fname
+		count += 1
+
+	filename = secure_filename(fname)
+	file.save(os.path.join("/var/www/FlaskApp/FlaskApp/tmp_files", filename))
 	return "success"
 
 #ANTIVIRUS STATS RETRIEVE
@@ -221,9 +234,10 @@ def home():
 			#file_info is a tuple
 			file_info = row + num_detected + num_processed
 			data.append(file_info)
+
 		return render_template("home.html", files = data)
 	except Exception as e:
-		#TODO error_log
+		write_error_log(str(e))
 		return render_template("error.html")
 
 @app.route('/antivirus', methods = ['GET'])
@@ -235,8 +249,12 @@ def antivirus():
 
 @app.route('/sort-antivirus', methods= ['GET'])
 def sort_av():
-	by = request.args['by']
-	return av_data(by)
+	try:
+		by = request.args['by']
+		return av_data(by)
+	except Exception as e:
+		write_error_log(str(e))
+		return "error"
 
 @app.route('/file', methods = ['GET'])
 def file():
@@ -251,30 +269,34 @@ def file_info():
 	data = {}
 	detailed_info = []
 
-	# Prelevo le date in cui il file è stato detectato
-	cursor.execute("SELECT distinct(detect_date) FROM VirusDetected WHERE file_id = " + id + " ORDER BY detect_date")
-	dates = cursor.fetchall()
+	try:
+		# Prelevo le date in cui il file è stato detectato
+		cursor.execute("SELECT distinct(detect_date) FROM VirusDetected WHERE file_id = " + id + " ORDER BY detect_date")
+		dates = cursor.fetchall()
 
-	count = 0
-	if len(dates) == 0:
-		return home()
+		count = 0
+		if len(dates) == 0:
+			return home()
 
-	for date_ in dates:
-		cursor.execute("SELECT av_name FROM VirusDetected WHERE file_id = %s AND detect_date = %s", (id, date_[0]))
-		count += cursor.rowcount
+		for date_ in dates:
+			cursor.execute("SELECT av_name FROM VirusDetected WHERE file_id = %s AND detect_date = %s", (id, date_[0]))
+			count += cursor.rowcount
 
-		detailed_info.append((date_[0], cursor.rowcount, cursor.fetchall(), count))
-	data['file_info'] = detailed_info
+			detailed_info.append((date_[0], cursor.rowcount, cursor.fetchall(), count))
+		data['file_info'] = detailed_info
 
-	# Prelevo il nome del file
-	cursor.execute("SELECT name FROM File WHERE id = " + id)
-	file_name_t = cursor.fetchone()
-	if file_name_t is None:
-		return home()
+		# Prelevo il nome del file
+		cursor.execute("SELECT name FROM File WHERE id = " + id)
+		file_name_t = cursor.fetchone()
+		if file_name_t is None:
+			return home()
 
-	data['name'] = file_name_t[0]
-	data['length'] = len(dates)
-	return data
+		data['name'] = file_name_t[0]
+		data['length'] = len(dates)
+		return data
+	except Exception as e:
+		write_error_log(str(e))
+		return render_template("error.html")
 
 @app.route('/add', methods = ['POST'])
 def add_file():
@@ -282,10 +304,13 @@ def add_file():
 		return index()
 
 	try:
+		if 'file' not in request.files:
+			return "nofile"
+
 		f = request.files['file']
 		return manage_new_file(f)
 	except Exception as e:
-		#TODO error_log
+		write_error_log(str(e))
 		return "error"
 
 @app.route('/add-api', methods = ['POST'])
@@ -294,7 +319,7 @@ def add_file_api():
 		f = request.files['file']
 		return manage_new_file(f)
 	except Exception as e:
-		#TODO error_log
+		write_error_log(str(e))
 		return "error"
 
 @app.route('/rmv', methods = ['POST'])
@@ -304,12 +329,11 @@ def rmv_file():
 
 	try:
 		id = request.data
-		#commented for now for avoiding damage
-		#cursor.execute("DELETE FROM File WHERE id = " + id)
-		#db_connection.commit()
+		cursor.execute("DELETE FROM File WHERE id = " + id)
+		db_connection.commit()
 		return "success"
 	except Exception as e:
-		#TODO error_log
+		write_error_log(str(e))
 		return "error"
 
 @app.route('/logout')

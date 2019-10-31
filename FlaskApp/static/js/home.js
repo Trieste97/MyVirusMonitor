@@ -2,7 +2,7 @@ function get_file_info(id_)  {
 	window.location.replace("file?id=" + id_);
 }
 
-$('#upload-file-btn').click(function() {
+function add_file() {
 	var form_data = new FormData($('#upload-file')[0]);
 
 	$.ajax({
@@ -48,6 +48,9 @@ $('#upload-file-btn').click(function() {
 					icon: "error",
 				})
 			}
+			else {
+				alert(data);
+			}
 		},
 		error: function(data) {
 			swal({
@@ -57,7 +60,7 @@ $('#upload-file-btn').click(function() {
 			})
 		},
 	});
-});
+}
 
 function remove_file(id_)  {
 	swal({
