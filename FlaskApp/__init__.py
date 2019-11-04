@@ -4,6 +4,9 @@ from operator import itemgetter
 from datetime import datetime
 import mysql.connector, json, os
 
+#Update error_log permission with:
+#chown -R www-data:www-data path_to_file
+
 #FLASK HANDLERS
 app = Flask(__name__)
 app.secret_key = "3CDDB48BDD8D59EEB44FDFAA99B5"
@@ -29,6 +32,13 @@ conf_file.close()
 supported_filetypes = [
 	"exe", "eml", "xls", "img", "virus", "zip", "rar", "ace", "doc", "msi", ""
 ]
+
+#CHECK IF DB CNX IS STILL OPEN
+def check_db_connection():
+	try:
+		db_connection.ping()
+	except:
+		db_connection.reconnect()
 
 #ERROR LOG FUNCTION
 def write_error_log(error):
@@ -129,6 +139,73 @@ def av_sort_time():
 
 	return av_data
 
+def av_show_copies():
+	data = {}
+	cursor.execute("SELECT DISTINCT(av_name) FROM VirusDetected")
+	av_names = cursor.fetchall()
+	for av1_t in av_names:
+		for av2_t in av_names:
+			av1 = av1_t[0]
+			av2 = av2_t[0]
+
+			if av1 != av2:
+				data[av1 + "_" + av2] = [0, 0]
+
+	cursor.execute("SELECT id from File")
+	file_ids = cursor.fetchall()
+	for file in file_ids:
+		cursor.execute("SELECT * from VirusDetected WHERE file_id = %s ORDER BY detect_date", (file[0],))
+		if cursor.rowcount == 0:
+			continue
+
+		file_detects = cursor.fetchall()
+		first_avs = []
+		first_date = file_detects[0][2]
+		for info in file_detects:
+			av_name = info[1]
+			if info[2] == first_date:
+				first_avs.append([av_name, first_date])
+			else:
+				for av1_info in first_avs:
+					av1 = av1_info[0]
+					av1_date = av1_info[1]
+
+					if ((info[2] - av1_date).days) == 0:
+						continue
+
+					occurrences = data[av1_info[0] + "_" + av_name][0]
+					days = data[av1 + "_" + av_name][1]
+					data[av1 + "_" + av_name] = [occurrences + 1,
+												 days + (info[2] - av1_date).days]
+
+				first_avs.append([av_name, info[2]])
+
+	keys_to_delete = []
+	for key in data.keys():
+		occurrences = data[key][0]
+		time_total = data[key][1]
+		if occurrences > 0:
+			mean_days = time_total / occurrences
+			data[key].append("%.2f" % round(mean_days,2))
+		else:
+			keys_to_delete.append(key)
+
+	for k in keys_to_delete:
+		del data[k]
+
+	#Elimino quelli con poche occorrenze e troppi giorni attesi
+	keys_to_delete = []
+	for key in data.keys():
+		occurrences = data[key][0]
+		days = data[key][2]
+		if occurrences < 10 or int(days.split('.')[0]) > 25:
+			keys_to_delete.append(key)
+
+	for k in keys_to_delete:
+		del data[k]
+
+	return data
+
 def av_data(by):
 	query = "SELECT * FROM AntiVirus"
 	if by == "detects":
@@ -218,6 +295,8 @@ def home():
 	if not session.get('logged_in'):
 		return index()
 
+	check_db_connection()
+
 	try:
 		cursor.execute("SELECT * FROM File as F ORDER BY (SELECT count(*) FROM VirusDetected WHERE file_id = F.id) DESC;")
 		rows = cursor.fetchall()
@@ -249,12 +328,25 @@ def antivirus():
 
 @app.route('/sort-antivirus', methods= ['GET'])
 def sort_av():
+	check_db_connection()
 	try:
 		by = request.args['by']
 		return av_data(by)
 	except Exception as e:
 		write_error_log(str(e))
 		return "error"
+
+@app.route('/antivirus2', methods= ['GET'])
+def antivirus2():
+	if not session.get('logged_in'):
+		return index()
+
+	try:
+		data_ = av_show_copies()
+		return render_template("antivirus2.html", data = data_)
+	except Exception as e:
+		write_error_log(str(e))
+		return render_template("error.html")
 
 @app.route('/file', methods = ['GET'])
 def file():
@@ -265,6 +357,7 @@ def file():
 
 @app.route('/file-info', methods = ['GET'])
 def file_info():
+	check_db_connection()
 	id = request.args['id']
 	data = {}
 	detailed_info = []
@@ -303,19 +396,12 @@ def add_file():
 	if not session.get('logged_in'):
 		return index()
 
+	check_db_connection()
+
 	try:
 		if 'file' not in request.files:
 			return "nofile"
 
-		f = request.files['file']
-		return manage_new_file(f)
-	except Exception as e:
-		write_error_log(str(e))
-		return "error"
-
-@app.route('/add-api', methods = ['POST'])
-def add_file_api():
-	try:
 		f = request.files['file']
 		return manage_new_file(f)
 	except Exception as e:
@@ -327,6 +413,7 @@ def rmv_file():
 	if not session.get('logged_in'):
 		return index()
 
+	check_db_connection()
 	try:
 		id = request.data
 		cursor.execute("DELETE FROM File WHERE id = " + id)
