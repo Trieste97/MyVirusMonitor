@@ -103,7 +103,7 @@ def update(id_):
     print("Requesting data from VirusTotal")
     headers = {'x-apikey': api_key}
     url = get_report_url.replace("{id}", resource_)
-    response = requests.post(url, headers=headers)
+    response = requests.get(url, headers=headers)
     print("Data received")
 
     if response.status_code != 200:
@@ -178,6 +178,17 @@ def update(id_):
                 print("AntiVirus-File already registered as processed")
 
 
+#Checking if av is already in DB, else adding it
+def check_av(av_name):
+    tmp_query = ("SELECT name FROM AntiVirus WHERE name = %s")
+    cursor.execute(tmp_query, (av_name,))
+
+    if cursor.rowcount <= 0:
+        tmp_query = ("INSERT INTO AntiVirus(name) VALUES(%s)")
+        cursor.execute(tmp_query, (av_name,))
+        db_connection.commit()
+
+
 #################################################################################
 #                                                                               #
 #                            END UTILITY FUNCTIONS                              #
@@ -221,10 +232,10 @@ while True:
 
 
     print("Querying files to control")
-    query = ("SELECT id FROM File WHERE next_scan < NOW() ORDER BY next_scan LIMIT 30")
+    query = ("SELECT id FROM File WHERE next_scan < NOW() ORDER BY next_scan LIMIT 10")
     cursor.execute(query)
 
-    print("Got {}/30 files to scan".format(cursor.rowcount))
+    print("Got {}/10 files to scan".format(cursor.rowcount))
     for x in range(cursor.rowcount):
         queue_toscan.put((0, str(cursor.fetchone()[0])))
 
