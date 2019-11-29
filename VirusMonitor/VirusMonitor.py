@@ -96,9 +96,9 @@ def rescan(id_):
 #Updating info in DB with the response from VirusTotal
 def update(id_):
     print("Updating file")
-    query = ("SELECT resource_id FROM File WHERE id = %s")
+    query = ("SELECT name,resource_id FROM File WHERE id = %s")
     cursor.execute(query, (id_,))
-    resource_ = cursor.fetchone()[0]
+    filename_, resource_ = cursor.fetchone()
 
     print("Requesting data from VirusTotal")
     headers = {'x-apikey': api_key}
@@ -112,6 +112,14 @@ def update(id_):
         return
     
     report = response.json()
+
+    #Changing name of file in case it was 'auto-added' (from VirusFinder.py)
+    if filename_ == 'auto-added':
+        new_name = report['data']['attributes']['names'][0]
+        update_query = ("UPDATE File SET name = %s WHERE id = %s")
+        cursor.execute(update_query, (new_name, id_))
+        db_connection.commit()
+
     detected_av_query = ("SELECT av_name FROM VirusDetected WHERE file_id = %s")
     cursor.execute(detected_av_query, (id_,))
     detected_av_list = []
