@@ -115,10 +115,16 @@ def update(id_):
 
     #Changing name of file in case it was 'auto-added' (from VirusFinder.py)
     if filename_ == 'auto-added':
-        new_name = report['data']['attributes']['names'][0]
-        update_query = ("UPDATE File SET name = %s WHERE id = %s")
-        cursor.execute(update_query, (new_name, id_))
-        db_connection.commit()
+        try:
+            new_name = report['data']['attributes']['names'][0]
+            update_query = ("UPDATE File SET name = %s WHERE id = %s")
+            cursor.execute(update_query, (new_name, id_))
+            db_connection.commit()
+        except IndexError:
+            print("Removing from DB because no filename")
+            rmv_query = ("DELETE FROM File WHERE id = %s")
+            cursor.execute(rmv_query, (id_,))
+            db_connection.commit()
 
     detected_av_query = ("SELECT av_name FROM VirusDetected WHERE file_id = %s")
     cursor.execute(detected_av_query, (id_,))
