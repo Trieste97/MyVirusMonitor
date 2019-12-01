@@ -157,12 +157,12 @@ def update(id_):
 
         if av in detected_av_list:
             #1 caso: file individuato da av che lo aveva già individuato
-            if info_scan['category'] == "undetected":
+            if info_scan['category'] == "malicious":
                 #per ora non fare niente
                 pass
 
             #2 caso: file non individuato da av che prima lo aveva individuato => FALSO POSITIVO
-            elif info_scan['category'] == "malicious":
+            elif info_scan['category'] == "undetected":
                 rmv_query = ("DELETE FROM VirusDetected WHERE file_id = %s and av_name = %s")
                 cursor.execute(rmv_query, (id_,av,))
                 db_connection.commit()
@@ -182,7 +182,7 @@ def update(id_):
             db_connection.commit()
 
         #checks for antivirus che hanno processato il file
-        if av not in processed_av_list:
+        if av not in processed_av_list and info_scan['category'] != "type-unsupported":
             try:
                 ins_query = ("INSERT INTO AvProcessedFile(file_id,av_name) VALUES(%s,%s)")
                 cursor.execute(ins_query, (id_,av,))

@@ -1,6 +1,6 @@
 function create_chart(order, data)  {
 	//SORTING
-	function sortByDetects(a, b){
+	function sortFunction(a, b){
 		var value1 = 0, value2 = 0;
 		if(order == "detects")  {
 			value1 = data['av_stats'][a]['perc_detected'];
@@ -19,7 +19,7 @@ function create_chart(order, data)  {
 	for(av_name in data['av_stats'])  {
 		sorted_av_list.push(av_name);
 	}
-	sorted_av_list.sort(sortByDetects);
+	sorted_av_list.sort(sortFunction);
 
 	detects_dataPoints = []
 	false_dataPoints = []
@@ -98,57 +98,4 @@ function create_chart(order, data)  {
 	});
 
 	chart.render();
-}
-
-$("#sort-by-time").click(function()  {
-    $.ajax({
-		type: 'GET',
-		url: '/sort-antivirus',
-		data: {by: "time"},
-        error: function(data) {
-			swal({
-				title: "C'è stato un errore",
-				text: data,
-				icon: "error",
-			})
-		},
-		success: function(data) {
-			dataPoints = []
-			for( var item in data ) {
-				dataPoints.push({
-					y: data[item][2],
-					label: item,
-					av_info:
-						"Numero files rilevati dopo la prima volta (di altri AV): " + data[item][1]
-				});
-			}
-
-			var chart = new CanvasJS.Chart("chartContainer",
-			{
-				title:{ text: "Statistiche Antivirus" },
-				axisX: {
-					interval: 1
-				},
-				axisY: {
-					title: "Giorni medi attesi prima della rilevazione",
-					interval: 20
-				},
-				data: [
-				{
-					type: "bar",
-					toolTipContent: "<p class=\"text-center\">{y} giorni<hr/>{av_info}",
-					dataPoints: dataPoints
-				}]
-			});
-
-			chart.options.data.forEach(function(element) {
-				element.dataPoints.sort(compareDataPointYDescend);
-			});
-			chart.render();
-		},
-	});
-});
-
-function compareDataPointYDescend(dataPoint1, dataPoint2) {
-	return dataPoint1.y - dataPoint2.y;
 }

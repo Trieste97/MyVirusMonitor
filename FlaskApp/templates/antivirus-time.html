@@ -20,7 +20,7 @@
 		$( document ).ready(function() {
 			$.ajax({
 				type: 'GET',
-				url: '/get-av-general-stats',
+				url: '/get-av-time-stats',
 				error: function(data) {
 					swal({
 						title: "C'è stato un errore",
@@ -31,12 +31,12 @@
 				success: function(data) {
 					chart_len = data['num_antiviruses'] * 100;
 					$("#chartContainer").attr("style", "width: 95%; height: " + chart_len.toString() + "px;");
-					create_chart("detects", data);
+					create_chart("days", data);
 				},
 			});
 		});
-</script>
-<script type="text/javascript" src="https://canvasjs.com/assets/script/canvasjs.min.js"></script>
+	</script>
+	<script type="text/javascript" src="https://canvasjs.com/assets/script/canvasjs.min.js"></script>
 </head>
 <body style="background-color: white">
 	<script src="../static/js/navbar.js" type="text/javascript"></script>
@@ -51,7 +51,7 @@
 	<script src="../static/js/select2.js" type="text/javascript"></script>
 	<script src="../static/js/tilt.js" type="text/javascript"></script>
 	<script src="../static/js/main.js" type="text/javascript"></script>
-    <script src="../static/js/antivirus.js" type="text/javascript"></script>
+    <script src="../static/js/antivirus-time.js" type="text/javascript"></script>
 	<script src="https://unpkg.com/sweetalert/dist/sweetalert.min.js"></script>
 
 <script type="text/javascript">
