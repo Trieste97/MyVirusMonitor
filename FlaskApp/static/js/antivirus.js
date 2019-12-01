@@ -1,8 +1,31 @@
-function create_chart(title_, data)  {
+function create_chart(order, data)  {
+	//SORTING
+	function sortByDetects(a, b){
+		var value1 = 0, value2 = 0;
+		if(order == "detects")  {
+			value1 = data['av_stats'][a]['perc_detected'];
+			value2 = data['av_stats'][b]['perc_detected'];
+		} else if(order == "false")  {
+			value1 = data['av_stats'][a]['perc_false'];
+			value2 = data['av_stats'][b]['perc_false'];
+		} else  {
+			value1 = data['av_stats'][a]['perc_processed'];
+			value2 = data['av_stats'][b]['perc_processed'];
+		}
+		return ((value1 < value2) ? -1 : ((value1 > value2) ? 1 : 0));
+	}
+
+	sorted_av_list = []
+	for(av_name in data['av_stats'])  {
+		sorted_av_list.push(av_name);
+	}
+	sorted_av_list.sort(sortByDetects);
+
 	detects_dataPoints = []
 	false_dataPoints = []
 	processed_dataPoints = []
-	for(av_name in data['av_stats']) {
+	for(i in sorted_av_list) {
+		var av_name = sorted_av_list[i];
 		var num_detected = data['av_stats'][av_name]['files_detected'];
 		var num_processed = data['av_stats'][av_name]['files_processed'];
 		var num_falses = data['av_stats'][av_name]['false_positives'];
@@ -13,6 +36,9 @@ function create_chart(title_, data)  {
 		detects_dataPoints.push({
 			y: perc_detected,
 			label: av_name,
+			click: function(e){
+				create_chart("detects", data);
+			},
 			av_info:
 				"File rilevati: " + num_detected + 
 				"<br>File processati: " + num_processed
@@ -21,6 +47,9 @@ function create_chart(title_, data)  {
 		false_dataPoints.push({
 			y: perc_false,
 			label: av_name,
+			click: function(e){
+				create_chart("false", data);
+			},
 			av_info:
 				"Falsi positivi: " + num_falses + 
 				"<br>File processati: " + num_processed
@@ -29,6 +58,9 @@ function create_chart(title_, data)  {
 		processed_dataPoints.push({
 			y: perc_processed,
 			label: av_name,
+			click: function(e){
+				create_chart("processed", data);
+			},
 			av_info:
 				"File processati: " + num_processed + 
 				"<br>File totali: " + data['num_files']
@@ -37,12 +69,12 @@ function create_chart(title_, data)  {
 
 	var chart = new CanvasJS.Chart("chartContainer",
 	{
-		title:{ text: title_ },
+		title:{ text: "Statistiche AV" },
 		axisX: {
 			interval: 1
 		},
 		axisY: {
-			title: title_,
+			title: "Statistiche AV",
 			interval: 10,
 			maximum: 100
 		},
@@ -109,12 +141,14 @@ $("#sort-by-time").click(function()  {
 				}]
 			});
 
-			chart.options.data[0].dataPoints.sort(compareDataPointYDescend);
+			chart.options.data.forEach(function(element) {
+				element.dataPoints.sort(compareDataPointYDescend);
+			});
 			chart.render();
 		},
 	});
 });
 
 function compareDataPointYDescend(dataPoint1, dataPoint2) {
-	return dataPoint2.y - dataPoint1.y;
+	return dataPoint1.y - dataPoint2.y;
 }

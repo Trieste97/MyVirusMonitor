@@ -258,7 +258,7 @@ def home():
 		write_error_log(str(e))
 		return render_template("error.html")
 
-@app.route('/antivirus', methods = ['GET'])
+@app.route('/av-general-stats', methods = ['GET'])
 def antivirus():
 	if not session.get('logged_in'):
 		return index()
@@ -274,7 +274,7 @@ def av_stats():
 		write_error_log(str(e))
 		return "error"
 
-@app.route('/antivirus2', methods= ['GET'])
+@app.route('/av-copies-stats', methods= ['GET'])
 def antivirus2():
 	if not session.get('logged_in'):
 		return index()
