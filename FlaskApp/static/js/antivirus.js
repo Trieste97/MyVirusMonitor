@@ -1,17 +1,43 @@
 function create_chart(title_, data)  {
-	dataPoints = []
-	for( var i = 0; i < data['length']; i++ ) {
-		dataPoints.push({
-			y: data['percs'][i],
-			label: data['av_data'][i][0],
+	detects_dataPoints = []
+	false_dataPoints = []
+	processed_dataPoints = []
+	for(av_name in data['av_stats']) {
+		var num_detected = data['av_stats'][av_name]['files_detected'];
+		var num_processed = data['av_stats'][av_name]['files_processed'];
+		var num_falses = data['av_stats'][av_name]['false_positives'];
+		var perc_detected = data['av_stats'][av_name]['perc_detected'];
+		var perc_false = data['av_stats'][av_name]['perc_false'];
+		var perc_processed = data['av_stats'][av_name]['perc_processed'];
+
+		detects_dataPoints.push({
+			y: perc_detected,
+			label: av_name,
 			av_info:
-				"File rilevati: " + data['av_data'][i][1] + "<br>File processati: " +
-				data['av_data'][i][2] + "<br>Falsi positivi: " + data['av_data'][i][3]
+				"File rilevati: " + num_detected + 
+				"<br>File processati: " + num_processed
+		});
+
+		false_dataPoints.push({
+			y: perc_false,
+			label: av_name,
+			av_info:
+				"Falsi positivi: " + num_falses + 
+				"<br>File processati: " + num_processed
+		});
+
+		processed_dataPoints.push({
+			y: perc_processed,
+			label: av_name,
+			av_info:
+				"File processati: " + num_processed + 
+				"<br>File totali: " + data['num_files']
 		});
 	}
+
 	var chart = new CanvasJS.Chart("chartContainer",
 	{
-		title:{ text: "Statistiche Antivirus" },
+		title:{ text: title_ },
 		axisX: {
 			interval: 1
 		},
@@ -21,69 +47,26 @@ function create_chart(title_, data)  {
 			maximum: 100
 		},
 		data: [
-		{
-			type: "bar",
-			toolTipContent: "<p class=\"text-center\">{y}%<hr/>{av_info}",
-			dataPoints: dataPoints
-		}]
+			{
+				type: "bar",
+				toolTipContent: "<p class=\"text-center\">{y}%<hr/>{av_info}",
+				dataPoints: detects_dataPoints
+			},
+			{
+				type: "bar",
+				toolTipContent: "<p class=\"text-center\">{y}%<hr/>{av_info}",
+				dataPoints: false_dataPoints
+			},
+			{
+				type: "bar",
+				toolTipContent: "<p class=\"text-center\">{y}%<hr/>{av_info}",
+				dataPoints: processed_dataPoints
+			}
+		]
 	});
 
 	chart.render();
 }
-
-$("#sort-by-detects").click(function()  {
-    $.ajax({
-		type: 'GET',
-		url: '/sort-antivirus',
-		data: {by: "detects"},
-        error: function(data) {
-			swal({
-				title: "C'è stato un errore",
-				text: data,
-				icon: "error",
-			})
-		},
-		success: function(data) {
-            create_chart("Percentuale files rilevati", data);
-		},
-	});
-});
-
-$("#sort-by-processed").click(function()  {
-    $.ajax({
-		type: 'GET',
-		url: '/sort-antivirus',
-		data: {by: "processed"},
-        error: function(data) {
-			swal({
-				title: "C'è stato un errore",
-				text: data,
-				icon: "error",
-			})
-		},
-		success: function(data) {
-			create_chart("Percentuale files processati", data);
-		},
-	});
-});
-
-$("#sort-by-false").click(function()  {
-    $.ajax({
-		type: 'GET',
-		url: '/sort-antivirus',
-		data: {by: "false"},
-        error: function(data) {
-			swal({
-				title: "C'è stato un errore",
-				text: data,
-				icon: "error",
-			})
-		},
-		success: function(data) {
-			create_chart("Percentuale falsi positivi", data);
-		},
-	});
-});
 
 $("#sort-by-time").click(function()  {
     $.ajax({

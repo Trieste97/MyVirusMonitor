@@ -29,3 +29,5 @@ for file_id in file_ids_toremove:
     query = ("DELETE FROM File WHERE id = %s")
     cursor.execute(query, (file_id,))
     db_connection.commit()
+
+db_connection.close()

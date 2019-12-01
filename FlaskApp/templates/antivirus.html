@@ -20,8 +20,7 @@
     $( document ).ready(function() {
         $.ajax({
             type: 'GET',
-            url: '/sort-antivirus',
-            data: {by: "detects"},
+            url: '/antivirus-stats',
             error: function(data) {
                 swal({
                     title: "C'è stato un errore",
@@ -30,12 +29,9 @@
                 })
             },
             success: function(data) {
-                length = data['length'];
-                if(length > 15)  {
-                    new_len = length * 70;
-                    $("#chartContainer").attr("style", "width: 95%; height: " + new_len.toString() + "px;");
-                }
-                create_chart("Percentuale files rilevati", data);
+                chart_len = data['num_antiviruses'] * 100;
+                $("#chartContainer").attr("style", "width: 95%; height: " + chart_len.toString() + "px;");
+                create_chart("Statistiche generali", data);
             },
         });
     });
