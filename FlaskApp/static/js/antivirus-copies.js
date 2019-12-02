@@ -18,7 +18,7 @@ function view_data(data)  {
         var av_copier = copy.split('->')[0];
         var av_copied = copy.split('->')[1];
 
-        html_to_add = "<tr><td>" + av_copier + " -> " + av_copied + "</td>";
+        html_to_add = "<tr role=\"row\"><td>" + av_copier + " -> " + av_copied + "</td>";
         html_to_add += "<td>" + data[copy]['avg_days'] + "</td>";
         html_to_add += "<td>" + data[copy]['files'] + "</td></tr>";
         $("tbody").append(html_to_add);

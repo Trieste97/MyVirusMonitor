@@ -14,6 +14,7 @@
 	<link rel="stylesheet" type="text/css" href="../static/css/select2.css">
 	<link rel="stylesheet" type="text/css" href="../static/css/util.css">
 	<link rel="stylesheet" type="text/css" href="../static/css/main.css">
+	<link rel="stylesheet" type="text/css" href="../static/css/home.css">
 <!--===============================================================================================-->
 	<script src="../static/js/jquery-3.js" type="text/javascript"></script>
 	<script type="text/javascript">
@@ -36,20 +37,21 @@
 	</script>
 </head>
 
-<body style="background-color: white">
+<body>
 	<script src="../static/js/navbar.js" type="text/javascript"></script>
-	<div class="container-avlist">
-        <table class="table">
-            <thead>
-                <tr>
-                    <th>AV1 sembra copiare AV2</th>
-                    <th>Giorni medi attesi</th>
-                    <th>Occorrenze (numero files)</th>
-                </tr>
-            </thead>
-            <tbody>
-            </tbody>
-        </table>
+	<div id="wrapper">
+		<h1>Possibili copie tra AntiVirus</h1>
+		<table id="keywords" class="tablesorter tablesorter-default tablesorter76b2916c9107b8 table-striped" role="grid" cellspacing="0" cellpadding="0">
+			<thead>
+				<tr role="row" class="tablesorter-headerRow">
+					<th data-column="0" class="tablesorter-header tablesorter-headerUnSorted" tabindex="0" scope="col" role="columnheader" aria-disabled="false" aria-controls="keywords" unselectable="on" style="user-select: none;" aria-sort="none" aria-label="Keywords: No sort applied, activate to apply an ascending sort"><div class="tablesorter-header-inner"><span>AntiVirus 1 sembra copiare AntiVirus 2</span></div></th>
+					<th data-column="1" class="tablesorter-header tablesorter-headerUnSorted" tabindex="0" scope="col" role="columnheader" aria-disabled="false" aria-controls="keywords" unselectable="on" style="user-select: none;" aria-sort="none" aria-label="Impressions: No sort applied, activate to apply an ascending sort"><div class="tablesorter-header-inner"><span>Media giorni attesi</span></div></th>
+					<th data-column="2" class="tablesorter-header tablesorter-headerUnSorted" tabindex="0" scope="col" role="columnheader" aria-disabled="false" aria-controls="keywords" unselectable="on" style="user-select: none;" aria-sort="none" aria-label="Clicks: No sort applied, activate to apply an ascending sort"><div class="tablesorter-header-inner"><span>Occorrenze (numero files)</span></div></th>
+				</tr>
+			</thead>
+			<tbody aria-live="polite" aria-relevant="all">
+			</tbody>
+		</table>
 	</div>
 </body>
 <!--===============================================================================================-->
@@ -59,5 +61,5 @@
 	<script src="../static/js/select2.js" type="text/javascript"></script>
 	<script src="../static/js/tilt.js" type="text/javascript"></script>
 	<script src="../static/js/main.js" type="text/javascript"></script>
-    <script src="../static/js/antivirus.js" type="text/javascript"></script>
+    <script src="../static/js/antivirus-copies.js" type="text/javascript"></script>
 	<script src="https://unpkg.com/sweetalert/dist/sweetalert.min.js"></script>
