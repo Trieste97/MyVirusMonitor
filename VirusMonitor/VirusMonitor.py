@@ -51,7 +51,7 @@ def scan(filename):
 def insert(resource_id_, file_name_):
     print("Inserting file")
     query = ("INSERT INTO File(name,resource_id,next_scan) VALUES(%s,%s,%s)")
-    nextscan_ = datetime.now() + timedelta(hours=20)
+    nextscan_ = datetime.now() + timedelta(hours=24)
 
     try:
         cursor.execute(query, (file_name_,resource_id_,nextscan_,))
@@ -80,7 +80,7 @@ def rescan(id_):
 
     if response.status_code == 200:
         print("Resource submitted successfully")
-        nextscan_ = datetime.now() + timedelta(hours=20)
+        nextscan_ = datetime.now() + timedelta(hours=24)
         query = ("UPDATE File SET next_scan = %s WHERE id = %s")
         cursor.execute(query, (nextscan_,id_,))
         db_connection.commit()

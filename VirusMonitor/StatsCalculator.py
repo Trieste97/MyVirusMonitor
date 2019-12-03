@@ -98,11 +98,11 @@ def get_av_time_stats(db_connection,cursor):
         data_rows = cursor.fetchall()
         for row in data_rows:
             av_name, detect_date = row
-            days_passed = (detect_date - first_detect_date).days
+            seconds_passed = (detect_date - first_detect_date).seconds
 
             current_avg = data['av_data'][av_name]["avg_days"]
             current_files = data['av_data'][av_name]["files"]
-            new_avg = ((current_avg * current_files) + days_passed) / (current_files+1)
+            new_avg = ((current_avg * current_files) + seconds_passed) / (current_files+1)
             data['av_data'][av_name]["avg_days"] = new_avg
             data['av_data'][av_name]["files"] = current_files + 1
 
@@ -112,8 +112,9 @@ def get_av_time_stats(db_connection,cursor):
         if data['av_data'][av_name]['files'] < 10:
             avs_to_delete.append(av_name)
         else:
-            avg_days = data['av_data'][av_name]['avg_days']
-            data['av_data'][av_name]['avg_days'] = float('%.2f' % (avg_days))
+            #Converting seconds to days
+            current_seconds = data['av_data'][av_name]['avg_days']
+            data['av_data'][av_name]['avg_days'] = float('%.2f' % (current_seconds / 86400))
 
     for av_name in avs_to_delete:
 	    data['av_data'].pop(av_name)
@@ -160,21 +161,22 @@ def get_av_copies_stats(db_connection,cursor):
                     av_before_name = av_before[0]
                     av_before_date = av_before[1]
 
-                    if ((detect_date - av_before_date).days) == 0:
+                    if ((detect_date - av_before_date).seconds) == 0:
                         continue
 
                     occurrences = data[av_name + "->" + av_before_name]["files"]
-                    days = data[av_name + "->" + av_before_name]["avg_days"] * occurrences
+                    seconds = data[av_name + "->" + av_before_name]["avg_days"] * occurrences
                     data[av_name + "->" + av_before_name]["files"] = occurrences+1
-                    data[av_name + "->" + av_before_name]["avg_days"] = (days + (detect_date - av_before_date).days)/(occurrences+1)
+                    data[av_name + "->" + av_before_name]["avg_days"] = (seconds + (detect_date - av_before_date).seconds)/(occurrences+1)
 
                 first_avs.append([av_name, detect_date])
 
     avs_to_delete = []
     for av_name in data.keys():
         if data[av_name]['files'] > 0:
-            avg_days = data[av_name]['avg_days']
-            data[av_name]['avg_days'] = float('%.2f' % (avg_days))
+            #Converting seconds to days
+            avg_seconds = data[av_name]['avg_days']
+            data[av_name]['avg_days'] = float('%.2f' % (avg_seconds/86400))
 
             if data[av_name]['avg_days'] > 10 or data[av_name]['files'] < 10:
                 avs_to_delete.append(av_name)
