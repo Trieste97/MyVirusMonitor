@@ -9,8 +9,10 @@ try:
     max_detects = int(sys.argv[2])
 except IndexError as e:
     print("To run with minimum detects and maximum detects as first and second arguments")
+    sys.exit()
 except ValueError as e:
     print("Arguments must be integers")
+    sys.exit()
 
 #Initialization
 conf_file = open("VMConfig.json")

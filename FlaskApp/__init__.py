@@ -11,9 +11,10 @@ app = Flask(__name__)
 app.secret_key = "3CDDB48BDD8D59EEB44FDFAA99B5"
 
 #WEB LOGIN INFO
-conf_file = open("/var/www/FlaskApp/Config.json")
+conf_file = open("/var/www/FlaskApp/FlaskApp/WebConfig.json")
 conf = json.loads(conf_file.read())
 
+base_dir_path = conf['base_dir_path']
 true_user = conf['site_user']
 true_pass = conf['site_psw']
 
@@ -25,12 +26,7 @@ db_connection = mysql.connector.connect(
 	database=conf['db_name'])
 
 cursor = db_connection.cursor(buffered=True)
-
 conf_file.close()
-
-supported_filetypes = [
-	"exe", "eml", "xls", "img", "virus", "zip", "rar", "ace", "doc", "msi", ""
-]
 
 #CHECK IF DB CNX IS STILL OPEN
 def check_db_connection():
@@ -42,7 +38,7 @@ def check_db_connection():
 #ERROR LOG FUNCTION
 def write_error_log(error):
 	current_time = datetime.now()
-	error_file = open("/var/www/FlaskApp/FlaskApp/error_log", "a")
+	error_file = open(base_dir_path + "FlaskApp/error_log", "a")
 	error_file.write(current_time.strftime("%d/%m/%Y %H:%M:%S") + "\n")
 	error_file.write(error + "\n\n")
 	error_file.close()
@@ -52,19 +48,10 @@ def manage_new_file(file):
 	if file.filename == '':
 		return "nofile"
 
-	filetype_idx = file.filename.rfind('.') + 1
-	filetype = file.filename[filetype_idx :]
-	if filetype not in supported_filetypes:
-		return "not_supported_format"
-
-	path, dirs, files = next(os.walk("/var/www/FlaskApp/FlaskApp/tmp_files"))
+	path, dirs, files = next(os.walk(base_dir_path + "FlaskApp/tmp_files"))
 	file_count = len(files)
 	if file_count > 20:
 		return "too_many_files"
-
-	#TODO: gestire file size, max 100MB
-	#if file_size > 100000000:
-	#	return "too_big"
 
 	cursor.execute("SELECT * FROM File")
 	num_files_in_db = cursor.rowcount
@@ -78,7 +65,7 @@ def manage_new_file(file):
 		count += 1
 
 	filename = secure_filename(fname)
-	file.save(os.path.join("/var/www/FlaskApp/FlaskApp/tmp_files", filename))
+	file.save(os.path.join(base_dir_path + "FlaskApp/tmp_files", filename))
 	return "success"
 
 
@@ -131,7 +118,7 @@ def home():
 		return render_template("home.html", files = data)
 	except Exception as e:
 		write_error_log(str(e))
-		return render_template("error.html")
+		return render_template("error.html")	
 
 @app.route('/av-general-stats', methods = ['GET'])
 def antivirus_general():
@@ -142,8 +129,11 @@ def antivirus_general():
 
 @app.route('/get-av-general-stats', methods= ['GET'])
 def av_general_stats():
+	if not session.get('logged_in'):
+		return index()
+
 	try:
-		data = json.loads(open('/var/www/FlaskApp/StatsFiles/general_stats.json').read())
+		data = json.loads(open(base_dir_path + "Stats/general_stats.json").read())
 		return data
 	except Exception as e:
 		write_error_log(str(e))
@@ -158,8 +148,11 @@ def antivirus_time():
 
 @app.route('/get-av-time-stats', methods= ['GET'])
 def av_time_stats():
+	if not session.get('logged_in'):
+		return index()
+
 	try:
-		data = json.loads(open('/var/www/FlaskApp/StatsFiles/time_stats.json').read())
+		data = json.loads(open(base_dir_path + "Stats/time_stats.json").read())
 		return data
 	except Exception as e:
 		write_error_log(str(e))
@@ -174,8 +167,11 @@ def antivirus_copies():
 
 @app.route('/get-av-copies-stats', methods= ['GET'])
 def av_copies_stats():
+	if not session.get('logged_in'):
+		return index()
+
 	try:
-		data = json.loads(open('/var/www/FlaskApp/StatsFiles/copies_stats.json').read())
+		data = json.loads(open(base_dir_path + "Stats/copies_stats.json").read())
 		return data
 	except Exception as e:
 		write_error_log(str(e))

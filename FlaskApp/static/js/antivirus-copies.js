@@ -1,10 +1,10 @@
 function view_data(data)  {
     //SORTING
 	function sortFunction(a, b){
-		var value1 = data[a]['avg_days'];
-        var value2 = data[b]['avg_days'];
+		var value1 = data[a]['files'];
+        var value2 = data[b]['files'];
             
-		return ((value1 < value2) ? -1 : ((value1 > value2) ? 1 : 0));
+		return ((value1 > value2) ? -1 : ((value1 > value2) ? 1 : 0));
     }
     
     sorted_av_list = []

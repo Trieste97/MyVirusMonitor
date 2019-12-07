@@ -99,6 +99,7 @@ def get_av_time_stats(db_connection,cursor):
         for row in data_rows:
             av_name, detect_date = row
             seconds_passed = (detect_date - first_detect_date).seconds
+            seconds_passed += (detect_date - first_detect_date).days * 86400
 
             current_avg = data['av_data'][av_name]["avg_days"]
             current_files = data['av_data'][av_name]["files"]
@@ -125,7 +126,9 @@ def get_av_copies_stats(db_connection,cursor):
     data = {}
     cursor.execute("SELECT name FROM AntiVirus")
     av_names_t = cursor.fetchall()
+    av_names = []
     for av1_t in av_names_t:
+        av_names.append(av1_t[0])
         for av2_t in av_names_t:
             av1 = av1_t[0]
             av2 = av2_t[0]
@@ -154,6 +157,7 @@ def get_av_copies_stats(db_connection,cursor):
         first_date = file_detects[0][1]
         for info in file_detects:
             av_name,detect_date = info
+
             if detect_date == first_date:
                 first_avs.append([av_name, first_date])
             else:
@@ -161,31 +165,57 @@ def get_av_copies_stats(db_connection,cursor):
                     av_before_name = av_before[0]
                     av_before_date = av_before[1]
 
-                    if ((detect_date - av_before_date).seconds) == 0:
+                    total_seconds_passed = (detect_date - av_before_date).seconds
+                    total_seconds_passed += (detect_date - av_before_date).days*86400
+                    if (total_seconds_passed) == 0:
                         continue
 
                     occurrences = data[av_name + "->" + av_before_name]["files"]
                     seconds = data[av_name + "->" + av_before_name]["avg_days"] * occurrences
                     data[av_name + "->" + av_before_name]["files"] = occurrences+1
-                    data[av_name + "->" + av_before_name]["avg_days"] = (seconds + (detect_date - av_before_date).seconds)/(occurrences+1)
+                    data[av_name + "->" + av_before_name]["avg_days"] = (seconds + total_seconds_passed)/(occurrences+1)
 
                 first_avs.append([av_name, detect_date])
 
     avs_to_delete = []
-    for av_name in data.keys():
-        if data[av_name]['files'] > 0:
+    for av_couple in data.keys():
+        if data[av_couple]['files'] > 0:
             #Converting seconds to days
-            avg_seconds = data[av_name]['avg_days']
-            data[av_name]['avg_days'] = float('%.2f' % (avg_seconds/86400))
+            avg_seconds = data[av_couple]['avg_days']
+            data[av_couple]['avg_days'] = float('%.2f' % (avg_seconds/86400))
 
-            if data[av_name]['avg_days'] > 10 or data[av_name]['files'] < 10:
-                avs_to_delete.append(av_name)
+            if data[av_couple]['avg_days'] > 10 or data[av_couple]['files'] < 10:
+                avs_to_delete.append(av_couple)
         else:
-            avs_to_delete.append(av_name)
+            avs_to_delete.append(av_couple)
             
 
-    for av_name in avs_to_delete:
-        del data[av_name]
+    for av_couple in avs_to_delete:
+        del data[av_couple]
+
+    avs_to_delete = []
+    
+    #For every couple Av1->Av2, takes max one Av1, the highest probable (highest number of occorrences)
+    for av1 in av_names:
+        numOccurMax = 0
+        avMax = ""
+
+        for av_couple in data.keys():
+            av1_2 = av_couple.split("->")[0]
+            av2_2 = av_couple.split("->")[1]
+
+            if av1 == av1_2:
+                occur = data[av_couple]['files']
+                if occur > numOccurMax:
+                    numOccurMax = occur
+                    if avMax != "":
+                        avs_to_delete.append(av1+"->"+avMax)
+                    avMax = av2_2
+                else:
+                    avs_to_delete.append(av_couple)
+
+    for av_couple in avs_to_delete:
+        del data[av_couple]
 
     return data
 
@@ -210,29 +240,24 @@ while True:
         database=conf['db_name']
     )
     cursor = db_connection.cursor(buffered=True)
-
+    
     av_general_stats = get_av_general_stats(db_connection,cursor)
     print("Writing general stats on JSON file")
-    with open('../StatsFiles/general_stats.json', 'w+') as f:
+    with open('../Stats/general_stats.json', 'w+') as f:
         f.write(json.dumps(av_general_stats))
         
     av_time_stats = get_av_time_stats(db_connection,cursor)
     print("Writing time stats on JSON file")
-    with open('../StatsFiles/time_stats.json', 'w+') as f:
+    with open('../Stats/time_stats.json', 'w+') as f:
         f.write(json.dumps(av_time_stats))
-
+    
     av_copies_stats = get_av_copies_stats(db_connection,cursor)
-    print("Writing time stats on JSON file")
-    with open('../StatsFiles/copies_stats.json', 'w+') as f:
+    print("Writing copies stats on JSON file")
+    with open('../Stats/copies_stats.json', 'w+') as f:
         f.write(json.dumps(av_copies_stats))
     
     print("Closing connection to DB")
     db_connection.close()
-
-    #Freeing memory
-    av_general_stats = None
-    av_time_stats = None
-    av_copies_stats = None
 
     print("Going to sleep for 1 hour")
     time.sleep(3600)

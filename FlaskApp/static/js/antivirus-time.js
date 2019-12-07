@@ -19,11 +19,13 @@ function create_chart(order, data)  {
 		var avg_days = data['av_data'][av_name]['avg_days'];
 		var num_files = data['av_data'][av_name]['files'];
 
-		dataPoints.push({
-			y: avg_days,
-			label: av_name,
-			av_info: "Media su " + num_files + " files"
-		});
+		if(num_files > 45)  {
+			dataPoints.push({
+				y: avg_days,
+				label: av_name,
+				av_info: "Media su " + num_files + " files"
+			});
+		}
 	}
 
 	var chart = new CanvasJS.Chart("chartContainer",
@@ -34,7 +36,7 @@ function create_chart(order, data)  {
         },
         axisY: {
             title: "Giorni medi attesi prima della rilevazione",
-            interval: 20
+            interval: 3
         },
 		data: [
 			{

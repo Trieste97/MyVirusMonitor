@@ -1,21 +1,20 @@
-import requests, sys, json, mysql.connector
+import requests, sys, json, mysql.connector, time
 from datetime import datetime
 
 #Initialization
 conf_file = open("VMConfig.json")
 conf = json.loads(conf_file.read())
 db_connection = mysql.connector.connect(
-        user=conf['db_user'],
-        password=conf['db_psw'],
-        host=conf['db_host'],
-        database=conf['db_name'])
+    user=conf['db_user'],
+    password=conf['db_psw'],
+    host=conf['db_host'],
+    database=conf['db_name'])
 cursor = db_connection.cursor(buffered=True)
+comments_url = conf['comments_url']
 conf_file.close()
 
-comments_url = "https://www.virustotal.com/ui/comments?relationships=author%2Citem&limit=40"
 files_to_add = 0
 files_added = 0
-
 #Taking number of files to add to the monitor from args
 try:
     files_to_add = int(sys.argv[1])
@@ -41,18 +40,18 @@ while files_added < files_to_add:
 
             #Add into DB with 'auto-added' filename
             if resource_type == 'file':
-                print("Inserting file")
                 query = ("INSERT INTO File(name,resource_id,next_scan) VALUES(%s,%s,%s)")
                 nextscan = datetime.now()
 
                 try:
                     cursor.execute(query, ('auto-added',resource_id,nextscan,))
                     db_connection.commit()
-                    print("File successfully inserted")
+                    print("File n. {} successfully inserted".format(files_added+1))
                     files_added += 1
 
                 except mysql.connector.IntegrityError:
-                    print("File already registered")
+                    #file already registered
+                    pass
 
             if files_added >= files_to_add:
                 break
@@ -60,5 +59,8 @@ while files_added < files_to_add:
         #Finding next_url for next request and repeating it
         comments_url = data['links']['next']
 
+    else if resp.status_code == 429:
+        print("Going to sleep for 10 minutes because requests limit excedeed")
+        time.sleep(600)
     else:
         print("Some problem happened, status code: {}".format(resp.status_code))

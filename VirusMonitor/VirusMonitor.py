@@ -37,6 +37,8 @@ def scan(filename):
     if response != None and response.status_code == 200:
         insert(resource_id, filename)
         print("Scan succesfull")
+        os.remove("../FlaskApp/tmp_files/" + file_)
+        print("File " + file_ + " successfully scanned and deleted")
     elif response != None:
         print("Some problem happened\n" + "Status code: " + response.status_code)
     else:
@@ -224,10 +226,10 @@ queue_toscan = Queue(1000)
 
 #VirusTotal requirements
 api_key = conf['vm_api']
+post_scan_url = conf['scan_url']
+post_rescan_url = conf['rescan_url']
+get_report_url = conf['report_url']
 conf_file.close()
-post_scan_url = "https://www.virustotal.com/api/v3/files"
-post_rescan_url = "https://www.virustotal.com/api/v3/files/{id}/analyse"
-get_report_url = "https://www.virustotal.com/api/v3/files/{id}"
 
 #Start Virus Monitor
 print("VirusMonitor started")
@@ -239,17 +241,15 @@ while True:
     for file_ in files:
         try:
             scan(file_)
-            os.remove("../FlaskApp/tmp_files/" + file_)
-            print("File " + file_ + " successfully scanned and deleted")
         except Exception as e:
             report_error(str(e))
 
 
     print("Querying files to control")
-    query = ("SELECT id FROM File WHERE next_scan < NOW() ORDER BY next_scan LIMIT 10")
+    query = ("SELECT id FROM File WHERE next_scan < NOW() ORDER BY next_scan LIMIT 30")
     cursor.execute(query)
 
-    print("Got {}/10 files to scan".format(cursor.rowcount))
+    print("Got {}/30 files to scan".format(cursor.rowcount))
     for x in range(cursor.rowcount):
         queue_toscan.put((0, str(cursor.fetchone()[0])))
 
@@ -258,7 +258,7 @@ while True:
         was_empty = False
         tmp = queue_toscan.get()
 
-        #action = 0 OR 1 OR 2
+        #action = 0 OR 1
         #action = 0 => id_ = file id to rescan
         #action = 1 => id_ = file id to get report and update
         action_ = tmp[0]

@@ -29,7 +29,7 @@
 					})
 				},
 				success: function(data) {
-					chart_len = data['num_antiviruses'] * 100;
+					chart_len = data['num_antiviruses'] * 20;
 					$("#chartContainer").attr("style", "width: 95%; height: " + chart_len.toString() + "px;");
 					create_chart("days", data);
 				},
