@@ -1,4 +1,6 @@
-import json, mysql.connector, time
+import json, mysql.connector, time, math, heapq
+from datetime import datetime,timedelta
+from xlsxwriter import Workbook
 
 #Function for calculate antivirus general stats (detects,false positives and processed files)
 def get_av_general_stats(db_connection, cursor):
@@ -194,7 +196,6 @@ def get_av_copies_stats(db_connection,cursor):
         del data[av_couple]
 
     avs_to_delete = []
-    
     #For every couple Av1->Av2, takes max one Av1, the highest probable (highest number of occorrences)
     for av1 in av_names:
         numOccurMax = 0
@@ -216,10 +217,163 @@ def get_av_copies_stats(db_connection,cursor):
 
     for av_couple in avs_to_delete:
         del data[av_couple]
-
+    
     return data
 
+def get_av_copies_stats_cc(db_connection,cursor):
+    def max_of_timeslots(list):
+        int_list = []
+        for item in list:
+            int_list.append(int(item))
 
+        try:
+            return max(int_list)
+        except ValueError:
+            return 0
+
+    def write_on_excel():
+        wb = Workbook('../Stats/Matrix_CC.xlsx')
+        sheet1 = wb.add_worksheet('Matrix(sum)')
+        sheet2 = wb.add_worksheet('Matrix(time)')
+
+        count = 0
+        for av_name in timeslots.keys():
+            count += 1
+            sheet1.write(count, 0, av_name)
+            sheet1.write(0, count, av_name)
+            sheet2.write(count, 0, av_name)
+            sheet2.write(0, count, av_name)
+
+
+        for i in range(len(av_list)):
+            for j in range(len(av_list)):
+                sheet1.write(i+1, j+1, matrix_sum[av_list[i]][av_list[j]])
+                sheet2.write(i+1, j+1, matrix_time[av_list[i]][av_list[j]])
+
+        sheet1.conditional_format(1,1,len(av_list),len(av_list), {
+            'type': '2_color_scale',
+            'min_color': 'white',
+            'max_color': 'red'
+        })
+
+        red_format = wb.add_format({'bg_color':   '#E74C4C'})
+        sheet2.conditional_format(1,1,len(av_list),len(av_list), {
+            'type':     'cell',
+            'criteria': 'equal to',
+            'value':     0,
+            'format':    red_format
+        })
+        wb.close()
+
+    #USING CROSS-CORRELATION
+    #The starting point
+    cursor.execute('SELECT min(detect_date) FROM VirusDetected')
+    starting_date = cursor.fetchone()[0]
+    starting_date = (starting_date - timedelta(seconds=1))
+
+    #Obtaining list of all AVs
+    av_list = []
+    timeslots = {}
+    data = {}
+    matrix_sum = {}
+    matrix_time = {}
+    cursor.execute("SELECT name FROM AntiVirus ORDER BY name")
+    for av in cursor.fetchall():
+        av_list.append(av[0])
+        timeslots[av[0]] = {}
+        data[av[0]] = {}
+        matrix_sum[av[0]] = {}
+        matrix_time[av[0]] = {}
+
+    for av_name in timeslots.keys():
+        cursor.execute("SELECT detect_date FROM VirusDetected WHERE av_name = %s;", (av_name,))
+        for date in cursor.fetchall():
+            #date is a tuple containing 1 element => date[0] is the element
+            tot_seconds = (date[0] - starting_date).total_seconds()
+
+            #dividing the seconds for the time-slot I configured, in this case: 8 hours is a time-slot (28800 seconds)
+            time_slot = math.ceil(tot_seconds / 28800)
+            if str(time_slot) in timeslots[av_name]:
+                curr = timeslots[av_name][str(time_slot)]
+                timeslots[av_name][str(time_slot)] = curr+1
+            else:
+                data[av_name][str(time_slot)] = 1
+
+    #APPLYING CROSS-CORRELATION
+    for av_name1 in timeslots.keys():
+        max_av1 = max_of_timeslots(timeslots[av_name1].keys())
+        for av_name2 in timeslots.keys():
+            #calculating the max time_slot for stimate the range of n to use
+            max_av2 = max_of_timeslots(timeslots[av_name2].keys())
+            max_of = max(max_av1,max_av2)
+
+            #calling the variables of the result (time and the sum) respectively
+            #best_time, best_sum
+            #best_time can go from -max_of to max_of+1 (-n to +n)
+            best_time = 0
+            #best_sum can go from 0 to ...
+            best_sum = 0
+            for n in range(-max_of, max_of+1):
+                #Formula : (f.g)[n] = sum(f(m-n)*g(m)), with m from -inf to +inf
+                sum = 0
+                for m in timeslots[av_name2].keys():
+                    if str(int(m)-n) in timeslots[av_name1]:
+                        sum += timeslots[av_name1][str(int(m)-n)] * timeslots[av_name2][m]
+
+                if sum > best_sum:
+                    best_sum = sum
+                    best_time = n
+
+            matrix_sum[av_name1][av_name2] = best_sum
+            matrix_time[av_name1][av_name2] = best_time
+
+    with open('../Stats/CC_timeslots.json','w+') as f:
+        f.write(json.dumps(timeslots))
+
+    write_on_excel()
+
+    #ELIMINATING ALL except the 10 highest sums
+    #such that their time is < 0
+    elem_to_delete = []
+    elem_to_max = []
+    for i in range(len(av_list)):
+        current_max_sum = 0
+        for j in range(len(av_list)):
+            sum = matrix_sum[av_list[i]][av_list[j]]
+            time = matrix_time[av_list[i]][av_list[j]]
+
+            if time < 0:
+                #se è vuoto:
+                if not data[av_list[i]]:
+                    data[av_list[i]][av_list[j]] = sum
+                    current_max_sum = sum
+                else:
+                    av_before = list(data[av_list[i]])[0]
+                    sum_before = data[av_list[i]][av_before]
+                    if sum > sum_before:
+                        del data[av_list[i]][av_before]
+                        data[av_list[i]][av_list[j]] = sum
+                        current_max_sum = sum
+
+        if not data[av_list[i]]:
+            elem_to_delete.append(av_list[i])
+        else:
+            elem_to_max.append(current_max_sum)
+
+    for elem in elem_to_delete:
+        del data[elem]
+
+    elem_to_delete = []
+    highest_sums = heapq.nlargest(10, elem_to_max)
+    for av1 in data.keys():
+        av2 = list(data[av1].keys())[0]
+        if not data[av1][av2] in highest_sums:
+            elem_to_delete.append(av1)
+
+    for elem in elem_to_delete:
+        del data[elem]
+
+    return data
 
 #Initialization
 conf_file = open("VMConfig.json")
@@ -255,6 +409,12 @@ while True:
     print("Writing copies stats on JSON file")
     with open('../Stats/copies_stats.json', 'w+') as f:
         f.write(json.dumps(av_copies_stats))
+
+    #with cross-correlation method
+    av_copies_stats_cc = get_av_copies_stats_cc(db_connection,cursor)
+    print("Writing copies (cross-correlation) stats on JSON file")
+    with open('../Stats/copies_stats_cc.json', 'w+') as f:
+        f.write(json.dumps(av_copies_stats_cc))
     
     print("Closing connection to DB")
     db_connection.close()
