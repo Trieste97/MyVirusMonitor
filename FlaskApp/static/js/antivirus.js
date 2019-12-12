@@ -36,6 +36,10 @@ function create_chart(order, data)  {
 		detects_dataPoints.push({
 			y: perc_detected,
 			label: av_name,
+			indexLabel: perc_detected + "%",
+			indexLabelFontSize: 20,
+			indexLabelOrientation: "horizontal", 
+			indexLabelPlacement: "inside",
 			click: function(e){
 				create_chart("detects", data);
 			},
@@ -47,6 +51,10 @@ function create_chart(order, data)  {
 		false_dataPoints.push({
 			y: perc_false,
 			label: av_name,
+			indexLabel: perc_false + "%",
+			indexLabelFontSize: 20,
+			indexLabelOrientation: "horizontal", 
+			indexLabelPlacement: "inside",
 			click: function(e){
 				create_chart("false", data);
 			},
@@ -58,6 +66,10 @@ function create_chart(order, data)  {
 		processed_dataPoints.push({
 			y: perc_processed,
 			label: av_name,
+			indexLabel: perc_processed + "%",
+			indexLabelFontSize: 20,
+			indexLabelOrientation: "horizontal", 
+			indexLabelPlacement: "inside",
 			click: function(e){
 				create_chart("processed", data);
 			},

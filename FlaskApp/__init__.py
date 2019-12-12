@@ -177,6 +177,25 @@ def av_copies_stats():
 		write_error_log(str(e))
 		return "error"
 
+@app.route('/av-cc', methods = ['GET'])
+def antivirus_cc():
+	if not session.get('logged_in'):
+		return index()
+
+	return render_template("antivirus-cc.html")
+
+@app.route('/get-av-cc', methods= ['GET'])
+def av_cc_stats():
+	if not session.get('logged_in'):
+		return index()
+
+	try:
+		data = json.loads(open(base_dir_path + "Stats/copies_stats_cc.json").read())
+		return data
+	except Exception as e:
+		write_error_log(str(e))
+		return "error"
+
 @app.route('/file', methods = ['GET'])
 def file():
 	if not session.get('logged_in'):

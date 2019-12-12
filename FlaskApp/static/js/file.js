@@ -11,7 +11,12 @@ function create_chart(data)  {
         for( var j = 0; j < data['file_info'][i][2].length; j++ ) {
             current_av += data['file_info'][i][2][j] + "<br>";
         }
-        dataPoints.push({ x: new Date(data['file_info'][i][0]), y: data['file_info'][i][3], av_list: current_av});
+        dataPoints.push({
+            x: new Date(data['file_info'][i][0]), 
+            y: data['file_info'][i][3], 
+            av_list: current_av,
+            markerType: "square"
+        });
     }
 
     var chart = new CanvasJS.Chart("chartContainer", {
@@ -27,7 +32,7 @@ function create_chart(data)  {
             includeZero: true
         },
         data: [{
-            type: "line",
+            type: "spline",
             toolTipContent: "{x}<hr/>{av_list}",
             dataPoints: dataPoints
         }]

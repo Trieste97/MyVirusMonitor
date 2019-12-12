@@ -19,10 +19,14 @@ function create_chart(order, data)  {
 		var avg_days = data['av_data'][av_name]['avg_days'];
 		var num_files = data['av_data'][av_name]['files'];
 
-		if(num_files > 45)  {
+		if(num_files > 40)  {
 			dataPoints.push({
 				y: avg_days,
 				label: av_name,
+				indexLabel: "" + avg_days + " giorni",
+				indexLabelFontSize: 20,
+				indexLabelOrientation: "horizontal", 
+				indexLabelPlacement: "inside",
 				av_info: "Media su " + num_files + " files"
 			});
 		}
@@ -36,7 +40,7 @@ function create_chart(order, data)  {
         },
         axisY: {
             title: "Giorni medi attesi prima della rilevazione",
-            interval: 3
+            interval: 0.5
         },
 		data: [
 			{

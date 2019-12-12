@@ -297,7 +297,7 @@ def get_av_copies_stats_cc(db_connection,cursor):
                 curr = timeslots[av_name][str(time_slot)]
                 timeslots[av_name][str(time_slot)] = curr+1
             else:
-                data[av_name][str(time_slot)] = 1
+                timeslots[av_name][str(time_slot)] = 1
 
     #APPLYING CROSS-CORRELATION
     for av_name1 in timeslots.keys():
@@ -373,7 +373,14 @@ def get_av_copies_stats_cc(db_connection,cursor):
     for elem in elem_to_delete:
         del data[elem]
 
-    return data
+    #json semplified
+    data2 = {}
+    for av1 in data.keys():
+        av2 = list(data[av1].keys())[0]
+        sum = data[av1][av2]
+        data2[av1 + "->" + av2] = sum
+
+    return data2
 
 #Initialization
 conf_file = open("VMConfig.json")
@@ -384,7 +391,6 @@ db_host = conf['db_host']
 db_name = conf['db_name']
 conf_file.close()
 
-data = {}
 while True:
     print("Connecting to DB")
     db_connection = mysql.connector.connect(

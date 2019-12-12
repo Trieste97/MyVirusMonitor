@@ -4,6 +4,7 @@ navbar += "<a href=\"/home\" style=\"margin-right:3%;\"><button type=\"button\" 
 navbar += "<a href=\"/av-general-stats\" style=\"margin-right:3%;\"><button type=\"button\" class=\"btn btn-info\">Statistiche AV generali</button></a>";
 navbar += "<a href=\"/av-time-stats\" style=\"margin-right:3%;\"><button type=\"button\" class=\"btn btn-info\">Statistiche AV per tempistiche</button></a>";
 navbar += "<a href=\"/av-copies-stats\" style=\"margin-right:3%;\"><button type=\"button\" class=\"btn btn-info\">Possibili copie AV</button></a>";
+navbar += "<a href=\"/av-cc\" style=\"margin-right:3%;\"><button type=\"button\" class=\"btn btn-info\">Cross-Correlation tra AV</button></a>";
 navbar += "</nav>";
 
 $("body").prepend(navbar);
